@@ -2,12 +2,20 @@
 
 
 {% block content %}
+<form name="" id="" action="" method="post" enctype="multipart/form-data">
 
 {% if batch %}
-batch upload
+<!-- batch upload -->
+<input type="hidden" name="batch" value="1" />
+
 {% else %}
-single upload
+<!-- single upload -->
+<input type="hidden" name="batch" value="0" />
+
 {% endif %}
+
+<input type="submit" value="Add Object" />
+</form>
 
 {% endblock %}
 

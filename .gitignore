@@ -5,4 +5,4 @@
 *.swp
 *.log
 *.pyc
-pilot/settings.py
+local_settings.py
