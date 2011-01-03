@@ -1,0 +1,8 @@
+#*
+*#
+.#*
+*~
+*.swp
+*.log
+*.pyc
+pilot/settings.py
