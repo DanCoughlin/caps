@@ -1,0 +1,42 @@
+{% extends "page.html" %}
+{% block jscode %}
+function getIdentifier() {
+    $.ajax({
+        type: "GET",
+        url: "/getIdentifier",
+        data: "t=" + new Date().getTime(),
+        success: showIdentifier 
+    });
+}
+
+function showIdentifier(data) {
+    var json = $.parseJSON(data);
+    $('#identifier').html(json.identifier.value);
+}
+
+
+function getFixity() {
+    $.ajax({
+        type: "GET",
+        url: "/getFixity",
+        data: "t=" + new Date().getTime(),
+        success: showFixity
+    });
+}
+function showFixity(data) {
+    var json = $.parseJSON(data);
+    var fixList = "<ul><li>file: "+json.fixity.filename+"</li><li>hash: " + json.fixity.value + "</li><li>algorithm type: " + json.fixity.algorithm + "</li></ul>";
+    $('#fixity').html(fixList);
+}
+{% endblock %}
+
+{% block content %}
+
+<input type="button" onclick="getIdentifier();" value="Got Id?" />
+<div id="identifier"></div>
+
+
+<input type="button" onclick="getFixity();" value="Got Fixity?" />
+<div id="fixity"></div>
+
+{% endblock %}
