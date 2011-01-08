@@ -3,13 +3,26 @@
 <head>
 <title>{% block title %}Penn State University - CAPS{% endblock %}</title>
 <link rel="stylesheet" href="/site_media/css/style.css" type="text/css" />
+
 {% block cssfiles %}{% endblock %}
+
+<style type="text/css">
+{% block cssinline %}
+{% endblock %}
+</style>
+
+
 <script src="/site_media/js/jquery.js" type="text/javascript" language="javascript"></script>
 <script src="/site_media/js/modal.js" type="text/javascript" language="javascript"></script>
+
 {% block jsfiles %}{% endblock %}
+
 <script type="text/javascript" language="javascript">
+
 {% block jscode %}{% endblock %}
+
 </script>
+
 </head>
 <body>
 <!-- hidenav -->

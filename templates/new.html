@@ -1,8 +1,123 @@
 {% extends "page.html" %}
 
+{% block jsfiles %}
+<script src="/site_media/js/jquery.uploadProgress.js" type="text/javascript" language="javascript"></script>
+<script src="/site_media/js/jquery.tablesorter.js" type="text/javascript" language="javascript"></script>
+{% endblock %}
+
+{% block cssinline %}
+#progress_container {
+    font-size: .9em;
+    width: 100%;
+    height: 1.25em;
+    position: relative;
+    margin: 3em 0;
+    display: none;
+}
+
+#progress_filename {
+    font-size: .9em;
+    width: 100%;
+}
+
+#progress_bar {
+    width: 100%;
+    border: 1px solid #999;
+}
+
+#progress_indicator {
+    background: #8a9;
+    width: 0;
+    height: 4px;
+}
+{% endblock %}
+
+{% block jscode %}
+
+var fileSizePattern = /^(\d+(?:\.\d+)*)\s*([egkmpt])b?$/i;
+$.tablesorter.addParser({ 
+    id: 'filesize',
+    is: function(s) { 
+        return fileSizePattern.test(s); 
+    }, 
+    format: function(s) {
+        var groups = fileSizePattern.exec(s);
+        if (groups != null)
+        {
+            var size = new Number(groups[1]);
+            var unit = groups[2].toLowerCase();
+            switch (unit) {
+                case 'k':
+                    return size * 1024;
+                case 'm':
+                    return size * Math.pow(1024, 2);
+                case 'g':
+                    return size * Math.pow(1024, 3);
+                case 't':
+                    return size * Math.pow(1024, 4);
+                case 'p':
+                    return size * Math.pow(1024, 5);
+                case 'e':
+                    return size * Math.pow(1024, 6);
+                return size;
+            }
+        }
+    }, 
+    type: 'numeric' 
+}); 
+
+
+
+$(document).ready(function() 
+    { 
+        $("#upload_table").tablesorter({
+            cssHeader: 'sortable', 
+            cssAsc: 'sortedAsc', 
+            cssDesc: 'sortedDesc', 
+            widgets: ['zebra'],
+            headers: {3: {sorter: false}}
+        });
+        
+        $(function() {
+            $('#upload_form').uploadProgress({
+                jqueryPath: "/site_media/js/jquery.js",
+                progressBar: '#progress_indicator',
+                progressUrl: '/pilot/upload_progress/', //'{ url upload_progress }',
+                start: function() {
+                    $("#upload_form").hide();
+                    filename = $("#id_file").val().split(/[\/\\]/).pop();
+                    $("#progress_filename").html('Uploading ' + filename + "...");
+                    $("#progress_container").show();
+                },
+                uploadProgressPath: "/site_media/js/jquery.uploadProgress.js",
+                uploading: function(upload) {
+                    if (upload.percents == 100) {
+                        window.clearTimeout(this.timer);
+                        $("#progress_filename").html('Processing ' + filename + "...");
+                    } else {
+                        $("#progress_filename").html('Uploading ' + filename + ': ' + upload.percents + '%');
+                    }
+                },
+                interval: 1000
+            });
+        });
+    }
+);
+
+
+function checkFileType(ff) {
+
+    //alert(ff.value);
+
+}
+{% endblock %}
+<p>
+Choose a file to upload, add meta data and click &quotUpload Object&quot;
+</p>
 
 {% block content %}
-<form name="" id="" action="" method="post" enctype="multipart/form-data">
+<form name="" id="upload_form" action="/pilot/upload" method="POST" enctype="multipart/form-data">
+{% csrf_token %}
 
 {% if batch %}
 <!-- batch upload -->
@@ -14,10 +129,32 @@
 
 {% endif %}
 
-<label>File:</label> <input type="file" name="file_1" />
+<p id="ff1">
+<label>File:</label> <input type="file" id="id_file" name="file_1" onchange="checkFileType(this);"/>
+</p>
 
-<input type="submit" value="Add Object" />
+<p id="md1">
+<label>Meta Data:</label> 
+<select name="meta_1" id="meta_type_1" size="1">
+    <option value="">type 1</option>
+    <option value="">type 2</option>
+    <option value="">type 3</option>
+    <option value="">type 4</option>
+    <option value="">type 5</option>
+</select>
+<input type="text" name="meta_value_1" id="meta_value_1" size="20" maxlength="" />
+</p>
+
+
+<input type="submit" value="Upload Object" />
+
 </form>
 
+<div id="progress_container">
+    <div id="progress_filename"></div>
+    <div id="progress_bar">
+        <div id="progress_indicator"></div>
+    </div>
+</div>
 {% endblock %}
 
