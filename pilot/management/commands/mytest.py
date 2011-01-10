@@ -19,7 +19,7 @@ class Command(BaseCommand):
 
         print "exists:%s" % identity.exists(new_id)
         print "store"
-        storage.store(new_id, bag_location)
+        storage.add(new_id, bag_location)
         print "stored"
 
         fix = fixity.generate(myfile, 'md5')
@@ -38,7 +38,7 @@ def store_it(ark_id):
         print "bag not valid"
         sys.exit(1)
     print bag.path
-    location = storage.store("/dlt/caps/datastore", ark_id, bag.path)
+    location = storage.add("/dlt/caps/datastore", ark_id, bag.path)
     return location
 """	
 """
