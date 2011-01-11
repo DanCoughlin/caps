@@ -34,7 +34,7 @@ def new_object(request, type):
     batch = True
     if type == 'object':
         batch = False
-    return render_to_response('new.html', {'batch': batch});
+    return render_to_response('ingest.html', {'batch': batch});
 
 def handle_uploaded_file(f):
     fname = '/tmp/'+f.name
@@ -51,10 +51,10 @@ def upload_object(request):
         f = request.FILES['file_1']
         print f.name
         handle_uploaded_file(f)
-        #return render_to_response('new.html', {'batch': True});
+        #return render_to_response('ingest.html', {'batch': True});
         return HttpResponseRedirect('/pilot/')
 
-    return render_to_response('new.html', {'batch': False});
+    return render_to_response('ingest.html', {'batch': False});
 
 # A view to report back on upload progress:
 def upload_progress(request):
