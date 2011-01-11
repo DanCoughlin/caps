@@ -1,1 +1,12 @@
-CAPS is a Django app for lightweight curation of digital objects.  More detail later.
+h1. CAPS
+
+CAPS (Curation Architecture Prototype Service) is a Django app for lightweight curation of digital objects, powered by curation microservices.  More detail later.
+
+h2. Dependencies
+
+* Django
+* gitdb
+* gitpython
+* pairtree
+* arkpy
+* bagit

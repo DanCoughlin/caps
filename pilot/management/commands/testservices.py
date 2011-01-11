@@ -1,15 +1,18 @@
+import shutil
+from tempfile import mkdtemp
 from django.core.management.base import BaseCommand
 from services import identity, fixity, storage, annotate
 
 
 class Command(BaseCommand):
-    args = ''
+    args = '<file>'
     help = 'test basic services'
 
     def handle(self, *args, **options):
         print "starting"
-        myfile = "/dlt/users/dmc186/dltmap.js"
-        bag_location = "/tmp/testbag"
+        source_location = mkdtemp()
+        myfile = args[0]
+        shutil.copy(myfile, source_location)
         new_id = identity.mint()
         print "new_id:%s" % new_id
         print "exists:%s" % identity.exists(new_id)
@@ -19,7 +22,7 @@ class Command(BaseCommand):
 
         print "exists:%s" % identity.exists(new_id)
         print "store"
-        storage.add(new_id, bag_location)
+        storage.add(new_id, source_location)
         print "stored"
 
         fix = fixity.generate(myfile, 'md5')
@@ -29,7 +32,7 @@ class Command(BaseCommand):
         print "fixity exists? %s" % fixity.exists(fix)
 
         print "adding an annotation"
-        annotation = (new_id, "http://purl.org/dc/elements/1.1/title", "this is a test title")
+        annotation = (new_id, ("dc", "http://purl.org/dc/elements/1.1/", "title"), "this is a test title")
         annotate.add(new_id, annotation)
         print "annotation added"
         print "ending"

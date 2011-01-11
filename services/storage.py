@@ -2,10 +2,14 @@ import os
 import pairtree
 import bagit
 import git
+import subprocess
+from twisted.internet import defer
 #from tasks import store as store_task
 
 
-tree_location = "/dlt/caps/datastore/stewardship"
+jhove2_path = "/home/mjg/Downloads/jhove2-0.6.0/jhove2.sh"
+tree_location = "/tmp/datastore/stewardship"
+uri_base = "ark:/"
 
 def add(identifier, source):
     #s = store_task.add.delay(tree_location=tree_location,
@@ -14,9 +18,9 @@ def add(identifier, source):
     #return s.get()
 
     # make_bag takes a directory for an argument
-    bag = bagit.make_bag(source, processes=0)
+    bag = bagit.make_bag(source, processes=1)
     f = pairtree.PairtreeStorageFactory()
-    pairstore = f.get_store(store_dir=tree_location, uri_base="ark://")
+    pairstore = f.get_store(store_dir=tree_location, uri_base=uri_base)
     pairobj = pairstore.create_object(identifier)
     pairobj.add_directory(bag.path)
     
@@ -24,7 +28,7 @@ def add(identifier, source):
     # and os.getlogin() causes ioctl error
     #celery workaround - import pwd
     #celery workaround - os.getlogin = lambda: pwd.getpwuid(os.getuid())[0]
-
+   
     repo = git.Repo.init(pairobj.location)    
     # files are loaded relative to the repository, so this 
     # prefix gets to the root of the filesystem as the repo
@@ -37,11 +41,24 @@ def add(identifier, source):
     index.add(repo.untracked_files)
     c = index.commit("initializing this repo:%s" % untracked)
 
+    # TODO: get this working
+    # characterize the object (not working synchronously (due to jhove2 subproc?))
+    #deferred = characterize(pairobj.location)
+    #deferred.addCallback(add_to_version_control, repo)
+
     return pairobj.location
+
+def add_to_version_control(f, repo):
+    print "f: %s" % f
+    print "repo: %s" % repo
+    index = repo.index
+    index.add([f])
+    index.commit("committing characs file asynchronously?")
+    return
 
 def get_or_create_file(identifier, f):
     # identifier should look like 42409/1f39k0594
-    store = pairtree.PairtreeStorageClient(store_dir=tree_location, uri_base="ark://")
+    store = pairtree.PairtreeStorageClient(store_dir=tree_location, uri_base=uri_base)
     if not store.exists(identifier):
         raise pairtree.ObjectNotFoundException("Object not found in pairtree: %s" % identifier)
     if store.exists(identifier, path=f):
@@ -55,7 +72,7 @@ def get_or_create_file(identifier, f):
 def put_file(identifier, f, bytestream):
     # the versioning stuff in here should probably be pulled into its own set
     #   of functions
-    store = pairtree.PairtreeStorageClient(store_dir=tree_location, uri_base="ark://")
+    store = pairtree.PairtreeStorageClient(store_dir=tree_location, uri_base=uri_base)
     if not store.exists(identifier):
         raise pairtree.ObjectNotFoundException("Object not found in pairtree: %s" % identifier)
     #new_file = not store.exists(identifier, path=f)
@@ -63,7 +80,7 @@ def put_file(identifier, f, bytestream):
     objroot = obj.id_to_dirpath()
     # make sure under version control
     try:
-        repo = Repo(objroot)
+        repo = git.Repo(objroot)
     except git.InvalidGitRepositoryError:
         repo = git.Repo.init(objroot)
     # commit if latest is uncommitted
@@ -80,3 +97,20 @@ def put_file(identifier, f, bytestream):
     index.add([f])
     index.commit("updated file %s via put_file" % f)
     return True
+
+@defer.inlineCallbacks
+def characterize(object_path):
+    characs_file = os.path.join(object_path, "characterization.json")
+
+    # run jhove2
+    yield subprocess.Popen([
+        jhove2_path,
+        "-i",
+        "-k",
+        "-d",
+        "JSON",
+        "-o",
+        characs_file,
+        object_path])
+
+    defer.returnValue(characs_file)
