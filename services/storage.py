@@ -44,45 +44,39 @@ def get_or_create_file(identifier, f):
     store = pairtree.PairtreeStorageClient(store_dir=tree_location, uri_base="ark://")
     if not store.exists(identifier):
         raise pairtree.ObjectNotFoundException("Object not found in pairtree: %s" % identifier)
-    if store.exists(identifier, path=os.path.join("obj", f)):
+    if store.exists(identifier, path=f):
         # return the file as a string
-        return store.get_stream(identifier, path='obj', stream_name=f)
+        return store.get_stream(identifier, path='', stream_name=f)
     else:
         # create an empty file and return None
-        store.put_stream(identifier, path='obj', stream_name=f, bytestream='')
+        store.put_stream(identifier, path='', stream_name=f, bytestream='')
         return None
         
 def put_file(identifier, f, bytestream):
     # the versioning stuff in here should probably be pulled into its own set
-    #   of functions, or at least consolidated within the function
+    #   of functions
     store = pairtree.PairtreeStorageClient(store_dir=tree_location, uri_base="ark://")
     if not store.exists(identifier):
         raise pairtree.ObjectNotFoundException("Object not found in pairtree: %s" % identifier)
-    if store.exists(identifier, path=os.path.join("obj", f)):
-        obj = pairtree.PairtreeStorageObject(identifier, store)
-        objroot = os.path.join(obj.id_to_dirpath(), "obj")
-        # file already in pairtree, so:
-        #   0. Make sure under version control
-        try:
-            repo = Repo(objroot)
-        except git.InvalidGitRepositoryError:
-            repo = git.Repo.init(objroot)
-        #   1. commit if latest is uncommitted
-        index = repo.index
-        if repo.is_dirty():
-            # right thing to do here?
-            index.commit("repo is dirty within put_file")
-        if f in repo.untracked_files:
-            index.add([f])
-            index.commit("within put_file, file %s had uncommitted changes" % f)
-        #   2. overwrite the file
-        store.put_stream(identifier, path='obj', stream_name=f, bytestream=bytestream)
-        #   3. commit
-        index = repo.index
+    #new_file = not store.exists(identifier, path=f)
+    obj = pairtree.PairtreeStorageObject(identifier, store)
+    objroot = obj.id_to_dirpath()
+    # make sure under version control
+    try:
+        repo = Repo(objroot)
+    except git.InvalidGitRepositoryError:
+        repo = git.Repo.init(objroot)
+    # commit if latest is uncommitted
+    index = repo.index
+    if repo.is_dirty():
+        index.commit("(within put_file) repo is dirty")
+    if f in repo.untracked_files:
         index.add([f])
-        index.commit("updated file %s via put_file" % f)
-    else:
-        store.put_stream(identifier, path='obj', stream_name=f, bytestream=bytestream)
-        # add to version control
-        # commit
+        index.commit("(within put_file) file %s had uncommitted changes" % f)
+    # write the file
+    store.put_stream(identifier, path='', stream_name=f, bytestream=bytestream)
+    # commit
+    index = repo.index
+    index.add([f])
+    index.commit("updated file %s via put_file" % f)
     return True

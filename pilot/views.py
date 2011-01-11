@@ -67,11 +67,15 @@ def upload_progress(request):
         progress_id = request.GET['X-Progress-ID']
     elif 'X-Progress-ID' in request.META:
         progress_id = request.META['X-Progress-ID']
+
+    print "progress_id:%s" % progress_id
+
     if progress_id:
         from django.utils import simplejson
         cache_key = "%s_%s" % (request.META['REMOTE_ADDR'], progress_id)
         data = cache.get(cache_key)
         json = simplejson.dumps(data)
+        print "json:%s" % json
         return HttpResponse(json)
     else:
         return HttpResponseBadRequest('Server Error: You must provide X-Progress-ID header or query param.')

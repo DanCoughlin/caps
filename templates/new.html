@@ -30,6 +30,13 @@
     width: 0;
     height: 4px;
 }
+.note {
+    border: 1px #ffcc00 solid;
+    background: #fcfeda;
+    display: none;
+    width: 50%;
+}
+
 {% endblock %}
 
 {% block jscode %}
@@ -105,9 +112,20 @@ $(document).ready(function()
 );
 
 
-function checkFileType(ff) {
-
-    //alert(ff.value);
+function checkFileType(ff, pelem) {
+    $('#'+pelem).hide();
+    var archiveExts = [".zip", ".tar", ".bz2", ".gz"];
+    var fname = ff.value;
+    var dot = fname.lastIndexOf(".");
+    if( dot == -1 ) {
+        return;
+    }
+    var ext = fname.substring(dot); 
+    if( $.inArray(ext, archiveExts) != -1) {
+        var msg = "It appears you are uploading a zip file (or something similar). Check the box below if you would like to store only the contents of the file individually.  If you want the whole zip file stored as one file leave the box unchecked."; 
+        //$('#'+pelem).hide().append(msg).fadeIn('slow');
+        $('#'+pelem).hide().html(msg).fadeIn('slow');
+    }
 
 }
 {% endblock %}
@@ -129,11 +147,12 @@ Choose a file to upload, add meta data and click &quotUpload Object&quot;
 
 {% endif %}
 
-<p id="ff1">
-<label>File:</label> <input type="file" id="id_file" name="file_1" onchange="checkFileType(this);"/>
-</p>
+<div id="ff1">
+<label>File:</label> <input type="file" id="id_file_1" name="file_1" onchange="checkFileType(this, 'error_ff1');"/>
+<p id="error_ff1" class="note"></p>
+</div>
 
-<p id="md1">
+<div id="md1">
 <label>Meta Data:</label> 
 <select name="meta_1" id="meta_type_1" size="1">
     <option value="">type 1</option>
@@ -143,7 +162,7 @@ Choose a file to upload, add meta data and click &quotUpload Object&quot;
     <option value="">type 5</option>
 </select>
 <input type="text" name="meta_value_1" id="meta_value_1" size="20" maxlength="" />
-</p>
+</div>
 
 
 <input type="submit" value="Upload Object" />

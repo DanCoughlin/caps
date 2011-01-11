@@ -1,10 +1,10 @@
 from django.core.management.base import BaseCommand
-from services import identity, fixity, storage
+from services import identity, fixity, storage, annotate
 
 
 class Command(BaseCommand):
     args = ''
-    help = 'test basic identity, fixity, and storage'
+    help = 'test basic services'
 
     def handle(self, *args, **options):
         print "starting"
@@ -28,8 +28,13 @@ class Command(BaseCommand):
         fixity.bind(new_id, fix)
         print "fixity exists? %s" % fixity.exists(fix)
 
+        print "adding an annotation"
+        annotation = (new_id, "http://purl.org/dc/elements/1.1/title", "this is a test title")
+        annotate.add(new_id, annotation)
+        print "annotation added"
         print "ending"
         return 
+
 """
 def store_it(ark_id):
     # make_bag takes a directory for an argument
