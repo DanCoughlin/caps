@@ -7,8 +7,8 @@ from twisted.internet import defer
 #from tasks import store as store_task
 
 
-jhove2_path = "/home/mjg/Downloads/jhove2-0.6.0/jhove2.sh"
-tree_location = "/tmp/datastore/stewardship"
+jhove2_path = "/usr/local/jhove2-0.6.0/jhove2.sh"
+tree_location = "/dlt/caps/datastore/stewardship"
 uri_base = "ark:/"
 
 def add(identifier, source):
@@ -48,13 +48,14 @@ def add(identifier, source):
 
     return pairobj.location
 
-def add_to_version_control(f, repo):
-    print "f: %s" % f
-    print "repo: %s" % repo
-    index = repo.index
-    index.add([f])
-    index.commit("committing characs file asynchronously?")
-    return
+# method was for attempt at async characterization invocation
+#def add_to_version_control(f, repo):
+#    print "f: %s" % f
+#    print "repo: %s" % repo
+#    index = repo.index
+#    index.add([f])
+#    index.commit("committing characs file asynchronously?")
+#    return
 
 def get_or_create_file(identifier, f):
     # identifier should look like 42409/1f39k0594
@@ -98,6 +99,7 @@ def put_file(identifier, f, bytestream):
     index.commit("updated file %s via put_file" % f)
     return True
 
+"""
 @defer.inlineCallbacks
 def characterize(object_path):
     characs_file = os.path.join(object_path, "characterization.json")
@@ -114,3 +116,4 @@ def characterize(object_path):
         object_path])
 
     defer.returnValue(characs_file)
+"""
