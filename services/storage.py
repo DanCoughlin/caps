@@ -2,8 +2,8 @@ import os
 import pairtree
 import bagit
 import git
-import subprocess
-from twisted.internet import defer
+#import subprocess
+#from twisted.internet import defer
 #from tasks import store as store_task
 
 
