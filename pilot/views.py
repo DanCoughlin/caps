@@ -2,7 +2,9 @@ import datetime
 import logging
 import mimetypes
 import os.path
-
+from services import identity, storage, annotate 
+from tempfile import mkdtemp
+from obj import DigitalObject
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.cache import cache
@@ -13,8 +15,26 @@ from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
 
-def default(request):
-    return render_to_response('index.html')
+def default(request, display):
+    myobj = []
+    myobj.append(DigitalObject("annual report.pdf", "42409/6c510c54b", "pdf", "1", "08:45am"))
+    myobj.append(DigitalObject("certificate.txt", "42409/p829jb983", "txt", "8", "05-January"))
+    myobj.append(DigitalObject("EMC XAM Developers Pack 1.0(2).zip", "42409/zj91v4776", "zip", "21", "01-January"))
+    myobj.append(DigitalObject("my office.jpg", "42409/nn01sf24b", "image/jpg", "1", "01-May-2010", "image1"))
+    myobj.append(DigitalObject("FFLBLog.txt", "42409/8347n589v", "txt", "4", "13-Jan-2010"))
+    myobj.append(DigitalObject("github", "42409/4929jq005", "folder", "1005", "15-Jun-2009"))
+    myobj.append(DigitalObject("mug shot.jpg", "42409/0b17c601v", "image/jpg", "2", "28-Oct-2008", "image3"))
+    myobj.append(DigitalObject("a9e00a035b71173b348cd735c35.pdf", "42409/9w9996157", "pdf", "1", "27-Nov-2005"))
+    myobj.append(DigitalObject("9780271032689_02_FM02_pv-vi.pdf", "42409/p494ss70q", "pdf", "1", "05-Oct-2006"))
+    myobj.append(DigitalObject("Meeting Minutes", "42409/z0776s284", "folder", "501", "14-Mar-2006"))
+    myobj.append(DigitalObject("iPhoneAppProgrammingGuide.pdf", "42409/pv60d063h", "pdf", "3", "29-Feb-2004"))
+    myobj.append(DigitalObject("polite eating.jpg", "42409/sm508655g", "image/jpg", "1", "05-July-2003", "image2"))
+    myobj.append(DigitalObject("ECM0906.pdf", "42409/f9178r251", "pdf", "7", "31-Oct-2003"))
+    myobj.append(DigitalObject("question.jpg", "42409/0k35wv26k", "image/jpg", "3", "31-Mar-2002", "image4"))
+    myobj.append(DigitalObject("9780271032689_09_CH04_p113-148.pdf", "42409/9177pv46w", "pdf", "10", "18-Aug-2001"))
+
+    
+    return render_to_response('index.html', {'objects': myobj, 'display': display})
 
 def get_identifier(request):
     id = identity.mint()
@@ -34,10 +54,12 @@ def new_object(request, type):
     batch = True
     if type == 'object':
         batch = False
-    return render_to_response('ingest.html', {'batch': batch});
+    meta_values = ['select meta type', 'contributor', 'coverage', 'creator', 'date', 'description', 'format', 'identifier', 'language', 'publisher', 'relation', 'rights', 'source', 'subject', 'title', 'type']
 
-def handle_uploaded_file(f):
-    fname = '/tmp/'+f.name
+    return render_to_response('ingest.html', {'meta': meta_values, 'batch': batch, 'range': range(5)});
+
+def handle_uploaded_file(udir, f):
+    fname = os.path.join(udir, f.name)
     print "saving %s" % fname
     destination = open(fname, 'wb+')
     for chunk in f.chunks():
@@ -47,12 +69,25 @@ def handle_uploaded_file(f):
 def upload_object(request):
     print "uploading"
     if request.method == 'POST':
-        print "posting"
+        
+        ark = identity.mint_new()
+        print "posting:%s" % ark
         f = request.FILES['file_1']
         print f.name
-        handle_uploaded_file(f)
-        #return render_to_response('ingest.html', {'batch': True});
-        return HttpResponseRedirect('/pilot/')
+        uploaddir = mkdtemp()
+        print "dir:%s" % uploaddir
+        # loop over the files to upload
+
+        handle_uploaded_file(uploaddir, f)
+
+        # done uploading the files 
+
+        repopath = storage.add(ark, uploaddir)
+        identity.bind(ark, repopath)
+        annotation = (ark, ("dc", "http://purl.org/dc/elements/1.1/", request.POST.get('meta_type_1')), request.POST.get('meta_value_1'))
+        annotate.add(ark, annotation)
+        
+        return HttpResponseRedirect('/pilot/list')
 
     return render_to_response('ingest.html', {'batch': False});
 
@@ -79,3 +114,9 @@ def upload_progress(request):
         return HttpResponse(json)
     else:
         return HttpResponseBadRequest('Server Error: You must provide X-Progress-ID header or query param.')
+
+def management(request, arkid):
+    return render_to_response('management.html', {'arkid': arkid})
+
+def screenshots(request):
+    return render_to_response('screenshots.html');

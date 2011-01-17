@@ -44,19 +44,33 @@
     <!-- InstanceBeginEditable name="primarynav" -->
         <ul>
             {% block menu %}
-            <li><a href="">blog</a></li>
-            <li><a href="/about/">about</a></li>
-            <li><a href="/members/">members</a></li>
+            <li><a href="/pilot/icons/">Dashboard</a></li>
+            <li><a href="/pilot/object/new/">Ingest</a></li>
             {% endblock %}
         </ul>
     <!-- InstanceEndEditable -->
     </div><!-- close #primarynav -->
 </div><!--close #bottomheader-->
 
+<div class="stats">
+<span style="font-size: 1.25em;font-weight: bold; color:#333366; padding-right: 10px">My Upload Stats:</span>
+<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Objects</b> 15&nbsp;&nbsp;<!-- |&nbsp;&nbsp; -->
+<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Files</b> 278&nbsp;&nbsp;<!-- |&nbsp;&nbsp; -->
+<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Total Size</b> 1.2 GB
+
+<span class="search">
+<input type="text" value="search term" onfocus="this.value='';"/>
+<input type="submit" value="go" />
+</span>
+</div>
 <div id="content">
 {% block content %}{% endblock %}
 </div><!-- close #content -->
-
+<div id="footer">
+<p>
+Copyright &copy; 2010 The Pennsylvania State University
+</p>
+</div>
 </body>
 </html>
 

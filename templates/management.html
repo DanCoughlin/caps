@@ -1,0 +1,72 @@
+{% extends "page.html" %}
+
+{% block cssinline %}
+.detail {
+    font-weight: bold; 
+    color: #990000;
+    margin-left: 10px;
+    margin-right: 5px;
+}
+{% endblock %}
+
+{% block jscode %}
+$(document).ready(function() {
+    $("#root ul").each(function() {$(this).css("display", "none");});
+    $("#root .category").click(function() {
+        var childid = "#" + $(this).attr("childid");
+        if ($(childid).css("display") == "none") {$(childid).css("display", "block");}
+        else {$(childid).css("display", "none");}
+        if ($(this).hasClass("cat_close")) {$(this).removeClass("cat_close").addClass("cat_open");}
+        else{$(this).removeClass("cat_open").addClass("cat_close");}
+    });
+});
+{% endblock %}
+
+{% block content %}
+<h2 style="color: #333366; padding: 0; margin-left: 100px; font-size: 1.35em;">Object Management</h2>
+<div style="margin: 0px auto; width: 80%; border: 1px #333366 solid;">
+<h4>Currently Viewing: Meeting Minutes</h4>
+<p>
+<span class="detail">&rsaquo;&rsaquo;</span>Id: {{arkid}}<br />
+<span class="detail">&rsaquo;&rsaquo;</span>Type: folder<br />
+<span class="detail">&rsaquo;&rsaquo;</span>Last Audit: 04-May-2009 (out of date - run audit below)<br />
+<span class="detail">&rsaquo;&rsaquo;</span>Current Version: <select> <option value="">1</option> <option value="">2</option> <option value="">3</option> <option value="">4</option> <option value="" selected="true">5</option> </select>
+</p>
+
+<h4>Included Files:</h4>
+<p>
+<span class="detail">&rsaquo;&rsaquo;</span>May-2010.txt<br />
+<span class="detail">&rsaquo;&rsaquo;</span>June-2010.txt<br />
+<span class="detail">&rsaquo;&rsaquo;</span>July-2010.txt<br />
+<span class="detail">&rsaquo;&rsaquo;</span>Aug-2010.txt<br />
+<span class="detail">&rsaquo;&rsaquo;</span>Sept-2010.txt<br />
+<span class="detail">&rsaquo;&rsaquo;</span>ReadMe.pdf<br />
+<span class="detail">&rsaquo;&rsaquo;</span>Logo.jpg<br />
+</p>
+
+<h4>Metadata:</h4>
+<p>
+<span class="detail">&rsaquo;&rsaquo;</span>contributor: Mairéad Martin, Michael Giarlo<br />
+<span class="detail">&rsaquo;&rsaquo;</span>creator: Dan Coughlin <br />
+<span class="detail">&rsaquo;&rsaquo;</span>date: March 14, 2010 <br />
+<span class="detail">&rsaquo;&rsaquo;</span>description: This is a listing of meeting minutes by year. <br /> 
+<span class="detail">&rsaquo;&rsaquo;</span>format: txt, pdf, jpg <br />
+<span class="detail">&rsaquo;&rsaquo;</span>language: UTF-8 <br />
+<span class="detail">&rsaquo;&rsaquo;</span>rights: creative commons <br />
+<span class="detail">&rsaquo;&rsaquo;</span>source: University Library <br />
+</p>
+
+
+<h4>Actions:</h4>
+<p>
+<span class="detail">&rsaquo;&rsaquo;</span><a href="">Add File</a><br />
+<span class="detail">&rsaquo;&rsaquo;</span><a href="">Remove File</a><br />
+<span class="detail">&rsaquo;&rsaquo;</span><a href="">Replace File</a><br />
+<span class="detail">&rsaquo;&rsaquo;</span><a href="">Audit</a><br />
+<span class="detail">&rsaquo;&rsaquo;</span><a href="">Manage Metadata</a><br />
+</p>
+
+<p>
+</p>
+</div>
+{% endblock %}

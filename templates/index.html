@@ -32,6 +32,83 @@ function showFixity(data) {
 
 {% block content %}
 
+<div style="margin: 10px 0 10px 175px;"> <a href="/pilot/object/new/">+New Object</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="/pilot/batch/new">++Batch Upload</a>
+<span style="padding-left: 300px;">
+{% if display == 'icons' %}
+View: <a href="/pilot/icons" style="padding: 3px; color: #eee; background: #3c5889;">Icons</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="/pilot/list">List</a>
+{% else %}
+View: <a href="/pilot/icons">Icons</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="/pilot/list" style="padding: 3px; color: #eee; background: #3c5889;">List</a>
+{% endif %}
+    <select >
+    <option value="">Order by</option>
+    <option value="name">Name</option>
+    <option value="updated" selected="true">Last Updated</option>
+    <option value="type">Type</option>
+    </select>
+</span>
+</div>
+
+<div>
+{% if display == 'icons' %}
+<table width="80%">
+    <tr>
+{% for o in objects %}
+        <td>
+<a href="/pilot/ark:/{{o.arkid}}">
+{% if o.filetype == 'pdf' %}
+   <img src="/site_media/img/icons/pdf.png" alt="" width="53" height="53" title="" border="" />
+{% else %} {%if o.filetype == 'image/jpg' %}
+   <img src="/site_media/img/icons/{{o.img}}_thumb.jpg" alt=""  title="" border="" />
+{% else %} {% if o.filetype == 'zip' %}
+   <img src="/site_media/img/icons/zip.png" alt="" width="53" height="53" title="" border="" />
+{% else %} {% if o.filetype == 'folder' %}
+   <img src="/site_media/img/icons/folder.png" alt="" width="53" height="43" title="" border="" />
+{% else %}
+   <img src="/site_media/img/icons/text.png" alt="" width="53" height="53" title="" border="" />
+{% endif %}{% endif %}{% endif %}{% endif %}
+</a>
+        <td>
+        <td>
+            <b>Name:</b> {{ o.name }}<br />
+            <b>Id:</b> {{ o.arkid }}<br />
+            <b>Last Updated:</b> {{ o.version_date }}<br />
+        </td>
+    {% if forloop.counter == 3 or forloop.counter == 6 or forloop.counter == 9 or forloop.counter == 12 %}
+        </tr>
+        <tr>
+            <td colspan="6">&nbsp;</td>
+        </tr>
+    {% endif %}
+
+{% endfor %}
+    </tr>
+</table>
+{% else %}
+<table width="80%">
+    <tr>
+        <th>Name</th>
+        <th>ID</th>
+        <th>Object Type</th>
+        <th>Version #</th>
+        <th>Last Updated</th>
+    </tr>
+    {% for o in objects %}
+    <tr class="{% cycle 'row1' 'row2' %}">
+        <td><a href="/pilot/ark:/{{o.arkid}}">{{o.name}}</a></td>
+        <td>{{o.arkid}}</td>
+        <td>{{o.filetype}}</td>
+        <td>{{o.version}}</td>
+        <td>{{o.version_date}}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+</div>
+{% endblock %}
+
+
+
+<!--
 <input type="button" onclick="getIdentifier();" value="Got Id?" />
 <div id="identifier"></div>
 
@@ -39,7 +116,4 @@ function showFixity(data) {
 <input type="button" onclick="getFixity();" value="Got Fixity?" />
 <div id="fixity"></div>
 
-<a href="/pilot/object/new/">New Object</a> <br />
-<a href="/pilot/batch/new">Batch Upload</a> <br />
-
-{% endblock %}
+-->

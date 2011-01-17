@@ -16,6 +16,13 @@ def validate(ark=''):
     #is_valid = identify_task.validate.delay(ark)
     #return is_valid.get()
 
+def mint_new():
+    id = mint()
+    # while the id exists get me a new one
+    while exists(id):
+        id = mint()
+    return id
+
 def exists(id):
     return Philes().id_exists(id)        
 
@@ -23,8 +30,6 @@ def lookup(id):
     return Philes().get_phile(id) 
        
 def bind(id, full_path, check_sum=''):
-    base = os.path.basename(full_path)
-    folder = os.path.dirname(full_path)
-    p = Philes(identifier=id, name=base, path=folder, check_sum=check_sum, date_updated=datetime.datetime.now() ) 
+    p = Philes(identifier=id, path=full_path, date_updated=datetime.datetime.now() ) 
     p.save()
 

@@ -33,10 +33,14 @@
 .note {
     border: 1px #ffcc00 solid;
     background: #fcfeda;
-    display: none;
-    width: 50%;
+    display: none; 
+    width: 80%;
+    padding: 5px;
+    margin:0;
 }
-
+#unzip_1 {
+   display: none;
+}
 {% endblock %}
 
 {% block jscode %}
@@ -122,19 +126,44 @@ function checkFileType(ff, pelem) {
     }
     var ext = fname.substring(dot); 
     if( $.inArray(ext, archiveExts) != -1) {
-        var msg = "It appears you are uploading a zip file (or something similar). Check the box below if you would like to store only the contents of the file individually.  If you want the whole zip file stored as one file leave the box unchecked."; 
-        //$('#'+pelem).hide().append(msg).fadeIn('slow');
-        $('#'+pelem).hide().html(msg).fadeIn('slow');
+        //var msg = "It appears you are uploading a zip file (or something similar). Check the box below if you would like to store only the contents of the file individually.  If you want the whole zip file stored as one file leave the box unchecked."; 
+        //$('#'+pelem).hide().html(msg).fadeIn('slow');
+        $('#'+pelem).hide().fadeIn('slow');
+        $('#unzip_1').show();
     }
 
 }
+
+function addFileInput() {
+    var cv = $('#upload_count').attr("value");
+    var fi = $('#ff'+cv).clone();
+    var nxtid = parseInt(cv) + 1;
+    fi.attr("id", "ff"+nxtid);
+    fi.insertAfter('#ff'+cv);   
+    $('#upload_count').attr("value", nxtid);
+}
+
+function addMetaInput() {
+    $('#md1').clone().insertAfter('#md1');
+}
 {% endblock %}
 <p>
-Choose a file to upload, add meta data and click &quotUpload Object&quot;
+Choose a file to upload, add metadata and click &quotUpload Object&quot;
 </p>
 
 {% block content %}
-<form name="" id="upload_form" action="/pilot/upload" method="POST" enctype="multipart/form-data">
+<form name="" id="upload_form" action="/pilot/upload" method="POST" enctype="multipart/form-data" class="uniForm">
+<input type="hidden" name="upload_count" id="upload_count" value="1" />
+
+
+<fieldset>
+<legend>Upload New Object</legend>
+
+<p style="margin: 0; padding-left: 10px;margin-bottom: 15px; ">
+Choose the file you would like to ingest.  Once you have choosen a file to uplaod, you <br />
+may choose to assign metadata to be saved with this file.  If you would like to add <br />
+additional files or metadata click the corresponding button.
+</p>
 {% csrf_token %}
 
 {% if batch %}
@@ -147,26 +176,56 @@ Choose a file to upload, add meta data and click &quotUpload Object&quot;
 
 {% endif %}
 
-<div id="ff1">
-<label>File:</label> <input type="file" id="id_file_1" name="file_1" onchange="checkFileType(this, 'error_ff1');"/>
-<p id="error_ff1" class="note"></p>
+{%if batch %}
+    {% for i in range %}
+
+<div id="ff_1"> 
+<label class="reg">File:</label> <input type="file" id="id_file_1" name="file_1" onchange="checkFileType(this);"/>
+<span id="unzip_1"><input type="checkbox" id="unzip_id" name="unzip_1" value="1" checked="true" />Unzip Contents</span>
+<p id="error_ff1" class="note">
+By default, this file will be unzipped and the contents stored individually. 
+Uncheck the box above if you would like to store the zip file as one file. 
+</p>
+</div>
+    {% endfor %}
+{% else %}
+
+<div id="ff_1"> 
+<label class="reg">File:</label> <input type="file" id="id_file_1" name="file_1" onchange="checkFileType(this, 'error_ff_1');" class="textInput removable"/>
+<span id="unzip_1"><input type="checkbox" id="unzip_id" name="unzip_1" value="1" checked="true" />Unzip Contents</span>
+<p id="error_ff_1" class="note">
+By default, this file will be unzipped and the contents stored individually. 
+Uncheck the box above if you would like to store the zip file as one file. 
+</p>
 </div>
 
+{% endif %}
+
+<div id="addfile">
+<a href="#" onclick="addFileInput(); return false;">+Add Files</a>
+</div>
+
+<p style="margin: 0; margin-top: 15px; margin-bottom: 5px;">
+Metadata will be assigned to all files.
+</p>
+
 <div id="md1">
-<label>Meta Data:</label> 
-<select name="meta_1" id="meta_type_1" size="1">
-    <option value="">type 1</option>
-    <option value="">type 2</option>
-    <option value="">type 3</option>
-    <option value="">type 4</option>
-    <option value="">type 5</option>
+<label class="reg">Metadata:</label> 
+<select name="meta_type_1" id="meta_type_1" size="1">
+{% for m in meta %} 
+    <option value="{{m}}">{{m}}</option>
+{% endfor %}
 </select>
 <input type="text" name="meta_value_1" id="meta_value_1" size="20" maxlength="" />
 </div>
 
-
+<div id="addmeta">
+<a href="#" onclick="addMetaInput(); return false;">+Add Metadata</a>
+</div>
+<p style="padding-left: 150px">
 <input type="submit" value="Upload Object" />
-
+</p>
+</fieldset>
 </form>
 
 <div id="progress_container">

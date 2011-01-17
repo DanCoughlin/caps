@@ -2,8 +2,8 @@ from django.db import models
 
 class Philes(models.Model):
     identifier = models.CharField(max_length=32)
-    check_sum  = models.CharField(max_length=32)
-    name = models.CharField(max_length=256)
+    #check_sum  = models.CharField(max_length=32)
+    #name = models.CharField(max_length=256)
     path = models.CharField(max_length=256)
     date_updated = models.DateTimeField()
 

@@ -69,7 +69,7 @@ def add(identifier, annotation):
     return True
 
 def _rdfstore_write(triple, ns_label, ns):
-    configString = "rdfstore"
+    configString = "/var/data/rdfstore.bdb"
     default_graph_uri = "http://example.org/what/is/this/for"
     store = rdflib.plugin.get('Sleepycat', rdflib.store.Store)('rdfstore')
     graph = rdflib.ConjunctiveGraph(store='Sleepycat',
@@ -83,7 +83,7 @@ def _rdfstore_write(triple, ns_label, ns):
     graph.close()
 
 def __dump_all():
-    configString = "rdfstore"
+    configString = "/var/data/rdfstore.bdb"
     default_graph_uri = "http://example.org/what/is/this/for"
     store = rdflib.plugin.get('Sleepycat', rdflib.store.Store)('rdfstore')
     graph = rdflib.ConjunctiveGraph(store='Sleepycat',
