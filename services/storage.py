@@ -11,11 +11,16 @@ jhove2_path = "/usr/local/jhove2-0.6.0/jhove2.sh"
 tree_location = "/dlt/caps/datastore/stewardship"
 uri_base = "ark:/"
 
-def add(identifier, source):
+def create_store(path, uri=uri_base):
+    return pairtree.PairtreeStorageClient(store_dir=path, uri_base=uri)
+
+def add(identifier, source, override_tree_location=None):
     #s = store_task.add.delay(tree_location=tree_location,
     #                         identifier=identifier,
     #                         source=source)
     #return s.get()
+    if override_tree_location:
+        tree_location = override_tree_location
 
     # make_bag takes a directory for an argument
     bag = bagit.make_bag(source, processes=1)
@@ -47,6 +52,8 @@ def add(identifier, source):
     #deferred.addCallback(add_to_version_control, repo)
 
     return pairobj.location
+
+add_object = add
 
 # method was for attempt at async characterization invocation
 #def add_to_version_control(f, repo):
@@ -98,6 +105,7 @@ def put_file(identifier, f, bytestream):
     index.add([f])
     index.commit("updated file %s via put_file" % f)
     return True
+
 
 """
 @defer.inlineCallbacks

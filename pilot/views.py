@@ -52,11 +52,13 @@ def get_fixity(request):
 
 def new_object(request, type):
     batch = True
+    r = 5
     if type == 'object':
         batch = False
+        r = 1
     meta_values = ['select meta type', 'contributor', 'coverage', 'creator', 'date', 'description', 'format', 'identifier', 'language', 'publisher', 'relation', 'rights', 'source', 'subject', 'title', 'type']
-
-    return render_to_response('ingest.html', {'meta': meta_values, 'batch': batch, 'range': range(5)});
+    
+    return render_to_response('ingest.html', {'meta': meta_values, 'batch': batch, 'range': range(r)});
 
 def handle_uploaded_file(udir, f):
     fname = os.path.join(udir, f.name)

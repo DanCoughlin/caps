@@ -38,9 +38,6 @@
     padding: 5px;
     margin:0;
 }
-#unzip_1 {
-   display: none;
-}
 {% endblock %}
 
 {% block jscode %}
@@ -96,7 +93,7 @@ $(document).ready(function()
                 progressUrl: '/pilot/upload_progress/', //'{ url upload_progress }',
                 start: function() {
                     $("#upload_form").hide();
-                    filename = $("#id_file").val().split(/[\/\\]/).pop();
+                    filename = $("#file_").val().split(/[\/\\]/).pop();
                     $("#progress_filename").html('Uploading ' + filename + "...");
                     $("#progress_container").show();
                 },
@@ -116,7 +113,11 @@ $(document).ready(function()
 );
 
 
-function checkFileType(ff, pelem) {
+//unzip_
+//error_ff_
+function checkFileType(ff) {
+    alert(ff.id); 
+    return;
     $('#'+pelem).hide();
     var archiveExts = [".zip", ".tar", ".bz2", ".gz"];
     var fname = ff.value;
@@ -126,8 +127,6 @@ function checkFileType(ff, pelem) {
     }
     var ext = fname.substring(dot); 
     if( $.inArray(ext, archiveExts) != -1) {
-        //var msg = "It appears you are uploading a zip file (or something similar). Check the box below if you would like to store only the contents of the file individually.  If you want the whole zip file stored as one file leave the box unchecked."; 
-        //$('#'+pelem).hide().html(msg).fadeIn('slow');
         $('#'+pelem).hide().fadeIn('slow');
         $('#unzip_1').show();
     }
@@ -135,11 +134,23 @@ function checkFileType(ff, pelem) {
 }
 
 function addFileInput() {
+    var updateids = ["ff_", "file_", "unzip_", "unzip_cb_", "error_ff_"];
+    // get current count
     var cv = $('#upload_count').attr("value");
-    var fi = $('#ff'+cv).clone();
+    var fi = $('#ff_'+cv).clone();
+    // get next value
     var nxtid = parseInt(cv) + 1;
-    fi.attr("id", "ff"+nxtid);
-    fi.insertAfter('#ff'+cv);   
+    fi.attr("id", "ff_"+nxtid);
+    // loop over the list of ids that need to be updated within this 
+    // node being cloned
+    for(var i=0; i < updateids.length; i++) {
+        var elem = fi.find("#"+updateids[i]+cv);
+        elem.attr("id", updateids[i]+nxtid);
+        if( elem.attr("name") ) {
+            elem.attr("name", updateids[i]+nxtid);
+        }
+    }
+    fi.insertAfter('#ff_'+cv);   
     $('#upload_count').attr("value", nxtid);
 }
 
@@ -153,7 +164,6 @@ Choose a file to upload, add metadata and click &quotUpload Object&quot;
 
 {% block content %}
 <form name="" id="upload_form" action="/pilot/upload" method="POST" enctype="multipart/form-data" class="uniForm">
-<input type="hidden" name="upload_count" id="upload_count" value="1" />
 
 
 <fieldset>
@@ -169,37 +179,27 @@ additional files or metadata click the corresponding button.
 {% if batch %}
 <!-- batch upload -->
 <input type="hidden" name="batch" value="1" />
+<input type="hidden" name="upload_count" id="upload_count" value="5" />
 
 {% else %}
 <!-- single upload -->
 <input type="hidden" name="batch" value="0" />
+<input type="hidden" name="upload_count" id="upload_count" value="1" />
 
 {% endif %}
 
-{%if batch %}
-    {% for i in range %}
+{% for i in range %}
 
-<div id="ff_1"> 
-<label class="reg">File:</label> <input type="file" id="id_file_1" name="file_1" onchange="checkFileType(this);"/>
-<span id="unzip_1"><input type="checkbox" id="unzip_id" name="unzip_1" value="1" checked="true" />Unzip Contents</span>
-<p id="error_ff1" class="note">
-By default, this file will be unzipped and the contents stored individually. 
-Uncheck the box above if you would like to store the zip file as one file. 
-</p>
-</div>
-    {% endfor %}
-{% else %}
-
-<div id="ff_1"> 
-<label class="reg">File:</label> <input type="file" id="id_file_1" name="file_1" onchange="checkFileType(this, 'error_ff_1');" class="textInput removable"/>
-<span id="unzip_1"><input type="checkbox" id="unzip_id" name="unzip_1" value="1" checked="true" />Unzip Contents</span>
-<p id="error_ff_1" class="note">
+<div id="ff_{{forloop.counter}}"> 
+<label class="reg">File:</label> <input type="file" id="file_{{forloop.counter}}" name="file_{{forloop.counter}}" onchange="checkFileType(this);"/>
+<span id="unzip_{{forloop.counter}}" class="hidden" ><input type="checkbox" id="unzip_cb_{{forloop.counter}}" name="unzip_cb_{{forloop.counter}}" value="1" checked="true" />Unzip Contents</span>
+<p id="error_ff_{{forloop.counter}}" class="note hidden">
 By default, this file will be unzipped and the contents stored individually. 
 Uncheck the box above if you would like to store the zip file as one file. 
 </p>
 </div>
 
-{% endif %}
+{% endfor %}
 
 <div id="addfile">
 <a href="#" onclick="addFileInput(); return false;">+Add Files</a>
