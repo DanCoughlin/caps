@@ -39,7 +39,7 @@ def ingest_directory(identifier, source, override_tree_location=None):
    
     repo = init_version(pairobj.location)
     (index, untracked) = stage_files(repo)
-    commit_version(index, "initializing repo with: %s" %untracked)
+    commit_version(index, "initializing repo with: %s" % untracked)
 
     # TODO: get this working
     # characterize the object (not working synchronously (due to jhove2 subproc?))
@@ -48,11 +48,20 @@ def ingest_directory(identifier, source, override_tree_location=None):
 
     return pairobj.location
 
-
 def commit_version(index, message=''):
-    return index.commit(message)
+    c = index.commit(message)
+    # you might expect the index to be empty after a commit but there's
+    # a bug in gitpython.  doing this manually for now.  have notified
+    # the gitpython devs, and patched our installation.
+    index.update()
+    return c
 
-def stage_files(repo):
+def stage_file(repo, f):
+    index = repo.index
+    index.add([f])
+    return index
+
+def stage_all(repo):
     index = repo.index
     # make a copy of untracked files for logging purposes 
     # (otherwise they are no longer 'untracked' after added to index
@@ -62,7 +71,7 @@ def stage_files(repo):
 
 def init_version(directory):
     # pass in a directory, return a git.Repo
-    # TODO: add a check to see if repo has already been initialized?
+    # note that init() is a safe operation, won't break an existing repo
     return git.Repo.init(directory)
 
 def get_or_create_file(identifier, f):
@@ -88,23 +97,12 @@ def put_file(identifier, f, bytestream):
     obj = pairtree.PairtreeStorageObject(identifier, store)
     objroot = obj.id_to_dirpath()
     # make sure under version control
-    try:
-        repo = git.Repo(objroot)
-    except git.InvalidGitRepositoryError:
-        repo = git.Repo.init(objroot)
-    # commit if latest is uncommitted
-    index = repo.index
-    if repo.is_dirty():
-        index.commit("(within put_file) repo is dirty")
-    if f in repo.untracked_files:
-        index.add([f])
-        index.commit("(within put_file) file %s had uncommitted changes" % f)
+    repo = init_version(objroot)
     # write the file
     store.put_stream(identifier, path='', stream_name=f, bytestream=bytestream)
-    # commit
-    index = repo.index
-    index.add([f])
-    index.commit("updated file %s via put_file" % f)
+    # stage and commit to version repo
+    (index, untracked) = stage_files(repo)    
+    commit_version(index, "updated file %s via put_file" % f)
     return True
 
 

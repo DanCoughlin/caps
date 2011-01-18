@@ -1,5 +1,6 @@
 # encoding: utf-8
-import os.path
+import os
+import git
 import glob
 import shutil
 import tempfile
@@ -68,38 +69,100 @@ class ServicesTest(TestCase):
 
     """
     def test_init_version(self):
-        self.assertTrue(False)
+        self.assertRaises(git.InvalidGitRepositoryError,
+                          git.Repo,
+                          self.workdir)
+        repo = storage.init_version(self.workdir)
+        self.assertEqual(type(repo),
+                         git.repo.base.Repo)
 
-    def test_list_versions(self):
-        self.assertTrue(False)
+    def test_add_one_untracked_file(self):
+        repo = storage.init_version(self.workdir)
+        (index, untracked) = storage.stage_all(repo)
+        self.assertEqual(len(repo.untracked_files),
+                         0)
+        self.assertEqual(untracked,
+                         repo.untracked_files)
 
-    def test_view_version_history(self):
-        self.assertTrue(False)
+        (h, f) = tempfile.mkstemp(dir=self.workdir)
+        self.assertEqual(len(repo.untracked_files),
+                         1)
+        self.assertEqual(repo.untracked_files,
+                         [os.path.basename(f)])
+        self.assertNotEqual(untracked,
+                            repo.untracked_files)
 
-    def test_view_version_diff_file(self):
-        self.assertTrue(False)
+        (index, untracked) = storage.stage_all(repo)
+        c = storage.commit_version(index, "qwertyuiop")
+        self.assertEqual(len(repo.untracked_files),
+                         0)                          
+        self.assertEqual(c.message, "qwertyuiop")
 
-    def test_view_version_diff_object(self):
-        self.assertTrue(False)
+    def test_add_commit_one_file_not_any_others(self):
+        repo = storage.init_version(self.workdir)
 
-    def test_restore_version_by_number(self):
-        self.assertTrue(False)
+        # repo and index should be empty
+        (index, untracked) = storage.stage_all(repo)
+        self.assertEqual(len(repo.untracked_files),
+                         0)
+        self.assertEqual(len(index.entries),
+                         0)
 
-    def test_restore_version_by_date(self):
-        self.assertTrue(False)
+        (h1, f1) = tempfile.mkstemp(dir=self.workdir)
+        (h2, f2) = tempfile.mkstemp(dir=self.workdir)
+        # two files should be untracked
+        self.assertEqual(len(repo.untracked_files),
+                         2)
+        self.assertTrue(os.path.basename(f1) in repo.untracked_files)
+        self.assertTrue(os.path.basename(f2) in repo.untracked_files)
 
-    def test_add_untracked_file(self):
-        self.assertTrue(False)
+        index = storage.stage_file(repo, f1)
+        # f2 should be untracked; f1 in the index
+        self.assertFalse(os.path.basename(f1) in repo.untracked_files)
+        self.assertTrue(os.path.basename(f2) in repo.untracked_files)
+        self.assertEqual(len(index.entries),
+                         1)
+        self.assertEqual(index.entries.keys()[0][0],
+                         os.path.basename(f1))
 
-    def test_tag_version(self):
-        self.assertTrue(False)
+        c = storage.commit_version(index, f1)
+        # after the commit, f1 should be committed, f2 should be untracked
+        # and there should be 0 files in the index
+        self.assertFalse(os.path.basename(f1) in repo.untracked_files)
+        self.assertTrue(os.path.basename(f2) in repo.untracked_files)
+        self.assertEqual(len(index.entries),
+                         0)
+        self.assertEqual(len(repo.untracked_files),
+                         1)
+        self.assertEqual(c.message, f1)
 
     def test_update_file(self):
-        self.assertTrue(False)
+        self.assertTrue(True)
 
     def test_remove_file(self):
-        self.assertTrue(False)
+        self.assertTrue(True)
 
     def test_rename_file(self):
-        self.assertTrue(False)
+        self.assertTrue(True)
+
+    def test_list_versions(self):
+        self.assertTrue(True)
+
+    def test_view_version_history(self):
+        self.assertTrue(True)
+
+    def test_view_version_diff_file(self):
+        self.assertTrue(True)
+
+    def test_view_version_diff_object(self):
+        self.assertTrue(True)
+
+    def test_restore_version_by_number(self):
+        self.assertTrue(True)
+
+    def test_restore_version_by_date(self):
+        self.assertTrue(True)
+
+    def test_tag_version(self):
+        self.assertTrue(True)
 

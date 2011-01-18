@@ -84,7 +84,7 @@ def upload_object(request):
 
         # loop over the files to upload
         for i in range(int(request.POST.get('upload_count'))):
-            print "file:%s" % request.FILES['file_'+i]
+            print "file:%s" % request.FILES['file_'+str(i+1)]
 
         #handle_uploaded_file(uploaddir, f)
 
@@ -95,7 +95,7 @@ def upload_object(request):
 
         # loop over metadata to store
         for i in range(int(request.POST.get('metadata_count'))):
-            print "%s=>%s" % (request.POST.get('meta_type_'+i), request.POST.get('meta_value_'+i))
+            print "%s=>%s" % (request.POST.get('meta_type_'+str(i+1)), request.POST.get('meta_value_'+str(i+1)))
         #annotation = (ark, ("dc", "http://purl.org/dc/elements/1.1/", request.POST.get('meta_type_1')), request.POST.get('meta_value_1'))
         #annotate.add(ark, annotation)
        
