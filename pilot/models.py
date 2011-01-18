@@ -4,6 +4,7 @@ class Philes(models.Model):
     identifier = models.CharField(max_length=32)
     #check_sum  = models.CharField(max_length=32)
     #name = models.CharField(max_length=256)
+    owner = models.CharField(max_length=32)
     path = models.CharField(max_length=256)
     date_updated = models.DateTimeField()
 

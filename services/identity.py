@@ -29,7 +29,7 @@ def exists(id):
 def lookup(id):
     return Philes().get_phile(id) 
        
-def bind(id, full_path, check_sum=''):
-    p = Philes(identifier=id, path=full_path, date_updated=datetime.datetime.now() ) 
+def bind(id, full_path, uid, check_sum=''):
+    p = Philes(identifier=id, path=full_path, owner=uid, date_updated=datetime.datetime.now() ) 
     p.save()
 

@@ -2,6 +2,7 @@ import rdflib
 import StringIO
 from datetime import datetime
 from tempfile import mkdtemp
+from contextlib import contextmanager
 from caps.services import storage, identity
 
 
@@ -65,34 +66,52 @@ def add(identifier, annotation):
 
     # write annotation to central datastore
     #   push this off till future iteration
-    _rdfstore_write(triple, ns_label, ns)
+    __rdfstore_write(triple, ns_label, ns)
     return True
 
-def _rdfstore_write(triple, ns_label, ns):
-    configString = "/var/data/rdfstore.bdb"
-    default_graph_uri = "http://example.org/what/is/this/for"
-    store = rdflib.plugin.get('Sleepycat', rdflib.store.Store)('rdfstore')
-    graph = rdflib.ConjunctiveGraph(store='Sleepycat',
-                                    identifier=default_graph_uri)
-    path = configString
-    rt = graph.open(path, create=False)
-    assert rt == rdflib.store.VALID_STORE
-    graph.bind(ns_label, ns)
-    graph.add(triple)
-    graph.commit()
-    graph.close()
+def query(q):
+    """
+    q should be a SPARQL query such as:
+
+    SELECT ?title
+    WHERE { ?subj <http://purl.org/dc/elements/1.1/title> ?title }
+
+    which grabs all titles from any subject containing the dc:title pred.
+
+    returns a list of hits
+    """
+    rdflib.plugin.register(
+        'sparql', rdflib.query.Processor,
+        'rdfextras.sparql.processor', 'Processor')
+    rdflib.plugin.register(
+        'sparql', rdflib.query.Result,
+        'rdfextras.sparql.query', 'SPARQLQueryResult')
+    with open_rdfstore() as graph:
+        query_resp = graph.query(q)
+    return query_resp.result
+
+@contextmanager
+def open_rdfstore(configString="/var/data/rdfstore.bdb", identifier=""):
+    try:
+        store = rdflib.plugin.get('Sleepycat', rdflib.store.Store)('rdfstore')
+        graph = rdflib.ConjunctiveGraph(store='Sleepycat',
+                                        identifier=identifier)
+        rt = graph.open(configString, create=False)
+        assert rt != rdflib.store.NO_STORE, "RDFstore is empty"
+        assert rt == rdflib.store.VALID_STORE
+        yield graph
+    finally:
+        graph.close()
+
+def __rdfstore_write(triple, ns_label, ns):
+    with open_rdfstore() as graph:
+        graph.bind(ns_label, ns)
+        graph.add(triple)
+        graph.commit()
+    return
 
 def __dump_all():
-    configString = "/var/data/rdfstore.bdb"
-    default_graph_uri = "http://example.org/what/is/this/for"
-    store = rdflib.plugin.get('Sleepycat', rdflib.store.Store)('rdfstore')
-    graph = rdflib.ConjunctiveGraph(store='Sleepycat',
-                                    identifier=default_graph_uri)
-    path = configString
-    rt = graph.open(path, create=False)
-    assert rt != rdflib.store.NO_STORE, "RDFstore is empty"
-    assert rt == rdflib.store.VALID_STORE, "RDFstore is corrupt"
-    n3store =  graph.serialize(format="n3")
-    graph.close()
-    print n3store
-    return n3store
+    with open_rdfstore() as graph:
+        n3 =  graph.serialize(format="n3")
+    return n3
+

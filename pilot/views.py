@@ -56,7 +56,10 @@ def new_object(request, type):
     if type == 'object':
         batch = False
         r = 1
-    meta_values = ['select meta type', 'contributor', 'coverage', 'creator', 'date', 'description', 'format', 'identifier', 'language', 'publisher', 'relation', 'rights', 'source', 'subject', 'title', 'type']
+    meta_values = ['select meta type', 'contributor', 'coverage', 
+        'creator', 'date', 'description', 'format', 'identifier', 
+        'language', 'publisher', 'relation', 'rights', 'source', 
+        'subject', 'title', 'type']
     
     return render_to_response('ingest.html', {'meta': meta_values, 'batch': batch, 'range': range(r)});
 
@@ -74,21 +77,29 @@ def upload_object(request):
         
         ark = identity.mint_new()
         print "posting:%s" % ark
-        f = request.FILES['file_1']
-        print f.name
+        #f = request.FILES['file_1']
+        #print f.name
         uploaddir = mkdtemp()
         print "dir:%s" % uploaddir
-        # loop over the files to upload
 
-        handle_uploaded_file(uploaddir, f)
+        # loop over the files to upload
+        for i in range(int(request.POST.get('upload_count'))):
+            print "file:%s" % request.FILES['file_'+i]
+
+        #handle_uploaded_file(uploaddir, f)
 
         # done uploading the files 
 
-        repopath = storage.ingest_directory(ark, uploaddir)
-        identity.bind(ark, repopath)
-        annotation = (ark, ("dc", "http://purl.org/dc/elements/1.1/", request.POST.get('meta_type_1')), request.POST.get('meta_value_1'))
-        annotate.add(ark, annotation)
-        
+        #repopath = storage.ingest_directory(ark, uploaddir)
+        #identity.bind(ark, repopath, 'dmc186')
+
+        # loop over metadata to store
+        for i in range(int(request.POST.get('metadata_count'))):
+            print "%s=>%s" % (request.POST.get('meta_type_'+i), request.POST.get('meta_value_'+i))
+        #annotation = (ark, ("dc", "http://purl.org/dc/elements/1.1/", request.POST.get('meta_type_1')), request.POST.get('meta_value_1'))
+        #annotate.add(ark, annotation)
+       
+        # done adding metadata 
         return HttpResponseRedirect('/pilot/list')
 
     return render_to_response('ingest.html', {'batch': False});
