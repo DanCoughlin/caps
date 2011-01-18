@@ -14,11 +14,14 @@ uri_base = "ark:/"
 def create_store(path, uri=uri_base):
     return pairtree.PairtreeStorageClient(store_dir=path, uri_base=uri)
 
-def add(identifier, source, override_tree_location=None):
+def ingest_directory(identifier, source, override_tree_location=None):
     #s = store_task.add.delay(tree_location=tree_location,
     #                         identifier=identifier,
     #                         source=source)
     #return s.get()
+
+    # added the override_tree_location param to allow unit tests to specify
+    #   an alternative location for the "repo"
     if override_tree_location:
         tree_location = override_tree_location
 
@@ -34,17 +37,9 @@ def add(identifier, source, override_tree_location=None):
     #celery workaround - import pwd
     #celery workaround - os.getlogin = lambda: pwd.getpwuid(os.getuid())[0]
    
-    repo = git.Repo.init(pairobj.location)    
-    # files are loaded relative to the repository, so this 
-    # prefix gets to the root of the filesystem as the repo
-    # currently sits in repo_path/
-    index = repo.index
-    # make a copy of untracked files for logging purposes 
-    # (otherwise they are no longer 'untracked' after added to index
-    untracked = repo.untracked_files
-
-    index.add(repo.untracked_files)
-    c = index.commit("initializing this repo:%s" % untracked)
+    repo = init_version(pairobj.location)
+    (index, untracked) = stage_files(repo)
+    commit_version(index, "initializing repo with: %s" %untracked)
 
     # TODO: get this working
     # characterize the object (not working synchronously (due to jhove2 subproc?))
@@ -53,16 +48,22 @@ def add(identifier, source, override_tree_location=None):
 
     return pairobj.location
 
-add_object = add
 
-# method was for attempt at async characterization invocation
-#def add_to_version_control(f, repo):
-#    print "f: %s" % f
-#    print "repo: %s" % repo
-#    index = repo.index
-#    index.add([f])
-#    index.commit("committing characs file asynchronously?")
-#    return
+def commit_version(index, message=''):
+    return index.commit(message)
+
+def stage_files(repo):
+    index = repo.index
+    # make a copy of untracked files for logging purposes 
+    # (otherwise they are no longer 'untracked' after added to index
+    untracked = repo.untracked_files
+    index.add(repo.untracked_files)
+    return (index, untracked)
+
+def init_version(directory):
+    # pass in a directory, return a git.Repo
+    # TODO: add a check to see if repo has already been initialized?
+    return git.Repo.init(directory)
 
 def get_or_create_file(identifier, f):
     # identifier should look like 42409/1f39k0594

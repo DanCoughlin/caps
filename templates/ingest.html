@@ -113,12 +113,24 @@ $(document).ready(function()
 );
 
 
-//unzip_
-//error_ff_
+/*
+ * this function determines if the user is trying to upload
+ * a zip file (or similar type) and displays a message to the 
+ * user, if they'd like the file unzipped on upload
+ * 
+ * determines the file type by extension
+ */
 function checkFileType(ff) {
-    alert(ff.id); 
-    return;
-    $('#'+pelem).hide();
+    var index = ff.id.lastIndexOf("_");
+    if( index == -1) {
+        return;
+    }
+    // get the id number to use
+    var id = ff.id.substring(index+1);
+    var uzip = "unzip_" + id;
+    var error = "error_ff_" + id;
+    //$('#'+error).hide();
+    hideZipDialog(id);
     var archiveExts = [".zip", ".tar", ".bz2", ".gz"];
     var fname = ff.value;
     var dot = fname.lastIndexOf(".");
@@ -126,37 +138,102 @@ function checkFileType(ff) {
         return;
     }
     var ext = fname.substring(dot); 
+    // show the error message
     if( $.inArray(ext, archiveExts) != -1) {
-        $('#'+pelem).hide().fadeIn('slow');
-        $('#unzip_1').show();
+        $('#'+error).hide().fadeIn('slow');
+        $('#'+uzip).show();
     }
 
 }
 
+
+/*
+ * hides the elements that display the file upload is a 
+ * zip file and can be unzipped on upload 
+ */
+function hideZipDialog(id) {
+    $('#error_ff_'+id).hide();
+    $('#unzip_'+id).hide();
+}
+
+
+/*
+ * add a form element that will allow a user to upload
+ * additional files
+ */
 function addFileInput() {
-    var updateids = ["ff_", "file_", "unzip_", "unzip_cb_", "error_ff_"];
-    // get current count
-    var cv = $('#upload_count').attr("value");
-    var fi = $('#ff_'+cv).clone();
-    // get next value
-    var nxtid = parseInt(cv) + 1;
-    fi.attr("id", "ff_"+nxtid);
-    // loop over the list of ids that need to be updated within this 
-    // node being cloned
-    for(var i=0; i < updateids.length; i++) {
-        var elem = fi.find("#"+updateids[i]+cv);
-        elem.attr("id", updateids[i]+nxtid);
-        if( elem.attr("name") ) {
-            elem.attr("name", updateids[i]+nxtid);
+    var fi_dupe = new Object();
+    fi_dupe['updateIds'] = ["ff_1", "file_1", "unzip_1", "unzip_cb_1", "error_ff_1"];
+    fi_dupe['prefixIds'] = ["ff_", "file_", "unzip_", "unzip_cb_", "error_ff_"];
+    fi_dupe['nodeId'] = 'ff_1';
+    fi_dupe['nodePrefix'] = 'ff_';
+    fi_dupe['countId'] = 'upload_count';
+
+    var nxtId = addFormElement(fi_dupe);
+
+    // hide the zip elements 
+    hideZipDialog(nxtId);
+}
+
+/*
+ * this function adds the necessary elements to
+ * add more metadata
+ */
+function addMetaInput() {
+    var md_dupe = new Object();
+    md_dupe['updateIds'] = ['md_1', 'meta_type_1', 'meta_value_1'];
+    md_dupe['prefixIds'] = ['md_', 'meta_type_', 'meta_value_'];
+    md_dupe['nodeId'] = 'md_1';
+    md_dupe['nodePrefix'] = 'md_';
+    md_dupe['countId'] = 'metadata_count';
+
+    addFormElement(md_dupe);
+}
+
+
+/* 
+ * function takes an object and adds a form element 
+ * based on the values of that object
+ *
+ * duplicate.updateIds => array of ids to increment value of
+ * duplicate.prefixIds => prefix that doesnt include the increment
+ *          suffix, of ids to increment
+ * duplicate.nodeId => node that we will duplicate
+ * duplicate.nodePrefix => prefix of node to duplicate, not including
+ *          the suffix that indicates which element number this is
+ * duplicate.countId => id of the form element that is keeping track 
+ *           of the number of elements we have duplicated
+ */
+function addFormElement(duplicate) {
+    var cv = $('#'+duplicate.countId).attr("value");
+
+    var cloneNode = $('#'+duplicate.nodeId).clone();
+    var nxtId = parseInt(cv) + 1;
+    cloneNode.attr("id", duplicate.nodePrefix+nxtId);
+
+    for (var i=0; i < duplicate.updateIds.length; i++) {
+        newId = duplicate.prefixIds[i] + nxtId;
+        var elem = cloneNode.find('#'+duplicate.updateIds[i]);
+        elem.attr("id", newId); 
+        // if element has a name attribute - update as well
+        if (elem.attr("name")) {
+            elem.attr("name", newId); 
+        }
+        if (elem.is("input")) {
+            elem.attr("value", "");
+        } 
+        else if (elem.is("select")) {
+            elem.attr("selectedIndex", 0);
         }
     }
-    fi.insertAfter('#ff_'+cv);   
-    $('#upload_count').attr("value", nxtid);
+   
+    cloneNode.insertAfter('#'+duplicate.nodePrefix+cv);
+
+    $('#'+duplicate.countId).attr("value", nxtId); 
+
+    return nxtId;
 }
 
-function addMetaInput() {
-    $('#md1').clone().insertAfter('#md1');
-}
 {% endblock %}
 <p>
 Choose a file to upload, add metadata and click &quotUpload Object&quot;
@@ -187,7 +264,9 @@ additional files or metadata click the corresponding button.
 <input type="hidden" name="upload_count" id="upload_count" value="1" />
 
 {% endif %}
+<input type="hidden" name="metadata_count" id="metadata_count" value="1" />
 
+<!-- FILE UPLOAD -->
 {% for i in range %}
 
 <div id="ff_{{forloop.counter}}"> 
@@ -201,15 +280,17 @@ Uncheck the box above if you would like to store the zip file as one file.
 
 {% endfor %}
 
+<!-- ADD MORE FILE UPLOADS -->
 <div id="addfile">
 <a href="#" onclick="addFileInput(); return false;">+Add Files</a>
 </div>
 
+<!-- METADATA -->
 <p style="margin: 0; margin-top: 15px; margin-bottom: 5px;">
 Metadata will be assigned to all files.
 </p>
 
-<div id="md1">
+<div id="md_1">
 <label class="reg">Metadata:</label> 
 <select name="meta_type_1" id="meta_type_1" size="1">
 {% for m in meta %} 
@@ -219,15 +300,20 @@ Metadata will be assigned to all files.
 <input type="text" name="meta_value_1" id="meta_value_1" size="20" maxlength="" />
 </div>
 
+
+<!-- ADD MORE METADATA -->
 <div id="addmeta">
 <a href="#" onclick="addMetaInput(); return false;">+Add Metadata</a>
 </div>
+
+<!-- SUBMIT -->
 <p style="padding-left: 150px">
 <input type="submit" value="Upload Object" />
 </p>
 </fieldset>
 </form>
 
+<!-- PROGRESS BAR -->
 <div id="progress_container">
     <div id="progress_filename"></div>
     <div id="progress_bar">

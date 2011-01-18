@@ -22,7 +22,7 @@ class Command(BaseCommand):
 
         print "exists:%s" % identity.exists(new_id)
         print "store"
-        storage.add(new_id, source_location)
+        storage.ingest_directory(new_id, source_location)
         print "stored"
 
         fix = fixity.generate(myfile, 'md5')

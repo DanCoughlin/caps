@@ -84,7 +84,7 @@ def upload_object(request):
 
         # done uploading the files 
 
-        repopath = storage.add(ark, uploaddir)
+        repopath = storage.ingest_directory(ark, uploaddir)
         identity.bind(ark, repopath)
         annotation = (ark, ("dc", "http://purl.org/dc/elements/1.1/", request.POST.get('meta_type_1')), request.POST.get('meta_value_1'))
         annotate.add(ark, annotation)
