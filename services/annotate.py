@@ -17,7 +17,7 @@ class Annotation(object):
     """
     # an annotation for now is a tuple of length 3 like follows:
     #   (subject, property, value) where:
-    #   * subject is ark://42409/foobarid
+    #   * subject is ark:/42409/foobarid
     #   * property is (dc, http://purl.org/dc/terms/, title)
     #     i.e., (label, vocab uri, element)
     #   * value is "Hamlet"
@@ -37,13 +37,17 @@ def add(identifier, annotation):
     # get_or_create annotations file from storage
     #   hardcode this filename to about.ttl?
     annotations = storage.get_or_create_file(identifier, "about.n3")
+    print "identifier:%s" % identifier
 
     # instantiate a graph
     g = rdflib.ConjunctiveGraph()
 
     if annotations:
         # pull existing annotations into in-memory rdf graph
-        g.parse(StringIO(annotations), format="n3")
+        g.parse(StringIO.StringIO(annotations), format="n3")
+
+    print "graph:%s" % g.serialize(format="n3")
+    print "annotation:%s" % list(annotation)
 
     # assume client sends strings/tuples (KLUDGE)
     ns = rdflib.Namespace(annotation[1][1])
@@ -54,6 +58,7 @@ def add(identifier, annotation):
 
     # attach annotation to annotations file
     g.bind(ns_label, ns)
+    print "triple: %s" % list(triple)
     g.add(triple)
 
     # validate annotations (don't write garbage)

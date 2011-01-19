@@ -17,13 +17,6 @@ class Philes(models.Model):
         else:
             return True 
 
-    def check_sum_exists(self, check_sum):
-        r = Philes.objects.filter(check_sum=check_sum)
-        if (r.count() == 0):
-            return False
-        else:
-            return True
-
     def get_phile(self, id):
         r = Philes.objects.get(identifier=id)
         return r

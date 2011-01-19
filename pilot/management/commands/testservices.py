@@ -18,7 +18,7 @@ class Command(BaseCommand):
         print "exists:%s" % identity.exists(new_id)
         print "is it valid:%s" % identity.validate(new_id)
 
-        identity.bind(new_id, myfile)
+        identity.bind(new_id, myfile, 'tstem31')
 
         print "exists:%s" % identity.exists(new_id)
         print "store"
@@ -27,9 +27,7 @@ class Command(BaseCommand):
 
         fix = fixity.generate(myfile, 'md5')
         print "fixity for %s is: %s" % (myfile, fix)
-        print "fixity exists? %s" % fixity.exists(fix)
         fixity.bind(new_id, fix)
-        print "fixity exists? %s" % fixity.exists(fix)
 
         print "adding an annotation"
         annotation = (new_id, ("dc", "http://purl.org/dc/elements/1.1/", "title"), "this is a test title")

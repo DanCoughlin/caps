@@ -15,5 +15,3 @@ def bind(id, check_sum):
     p.check_sum = check_sum
     p.save()
 
-def exists(check_sum):
-    return Philes().check_sum_exists(check_sum)

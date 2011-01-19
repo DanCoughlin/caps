@@ -53,21 +53,18 @@ class ServicesTest(TestCase):
         shutil.rmtree(self.workdir)
 
     """
-    
-    VERSIONING
 
-    Initiate versioning on an object (init)
-    List versions of an object/file (log)
-    View version history (log)
-    Show diffs of an object/file (diff)
-    Restore a version by date/name
-    Add an untracked file (add, commit)
-    Name a version (tag)
-    Update a file (add, commit)
-    Remove a file (rm, commit)
-    Rename a file (mv, commit)
+    TODO: Tests for:
+
+    STORE
+    VERIFY
+    IDENTIFY
+    ANNOTATE
 
     """
+    
+    """ VERSION """
+
     def test_init_version(self):
         self.assertRaises(git.InvalidGitRepositoryError,
                           git.Repo,
@@ -137,32 +134,42 @@ class ServicesTest(TestCase):
         self.assertEqual(c.message, f1)
 
     def test_update_file(self):
+        #Update a file (add, commit)
         self.assertTrue(True)
 
     def test_remove_file(self):
+        #Remove a file (rm, commit)
         self.assertTrue(True)
 
     def test_rename_file(self):
+        #Rename a file (mv, commit)
         self.assertTrue(True)
 
     def test_list_versions(self):
+        #List versions of an object/file (log)
         self.assertTrue(True)
 
     def test_view_version_history(self):
+        #View version history (log)
         self.assertTrue(True)
 
     def test_view_version_diff_file(self):
+        #Show diffs of an file (diff)
         self.assertTrue(True)
 
     def test_view_version_diff_object(self):
+        #Show diffs of an object (diff)
         self.assertTrue(True)
 
     def test_restore_version_by_number(self):
+        #Restore a version by name/number (checkout?)
         self.assertTrue(True)
 
     def test_restore_version_by_date(self):
+        #Restore a version by date (checkout?)
         self.assertTrue(True)
 
     def test_tag_version(self):
+        #Name a version (tag)
         self.assertTrue(True)
 

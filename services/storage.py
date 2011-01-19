@@ -2,16 +2,14 @@ import os
 import pairtree
 import bagit
 import git
+from caps.services import settings, identity
 #import subprocess
 #from twisted.internet import defer
 #from tasks import store as store_task
 
 
-jhove2_path = "/usr/local/jhove2-0.6.0/jhove2.sh"
-tree_location = "/dlt/caps/datastore/stewardship"
-uri_base = "ark:/"
 
-def create_store(path, uri=uri_base):
+def create_store(path, uri=settings.URI_BASE):
     return pairtree.PairtreeStorageClient(store_dir=path, uri_base=uri)
 
 def ingest_directory(identifier, source, override_tree_location=None):
@@ -24,11 +22,13 @@ def ingest_directory(identifier, source, override_tree_location=None):
     #   an alternative location for the "repo"
     if override_tree_location:
         tree_location = override_tree_location
-
+    else:
+        tree_location = settings.TREE_LOCATION
     # make_bag takes a directory for an argument
     bag = bagit.make_bag(source, processes=1)
     f = pairtree.PairtreeStorageFactory()
-    pairstore = f.get_store(store_dir=tree_location, uri_base=uri_base)
+    pairstore = f.get_store(store_dir=tree_location, uri_base=settings.URI_BASE)
+    identifier = identity.remove_scheme(identifier)
     pairobj = pairstore.create_object(identifier)
     pairobj.add_directory(bag.path)
     
@@ -38,7 +38,7 @@ def ingest_directory(identifier, source, override_tree_location=None):
     #celery workaround - os.getlogin = lambda: pwd.getpwuid(os.getuid())[0]
    
     repo = init_version(pairobj.location)
-    (index, untracked) = stage_files(repo)
+    (index, untracked) = stage_all(repo)
     commit_version(index, "initializing repo with: %s" % untracked)
 
     # TODO: get this working
@@ -64,7 +64,7 @@ def stage_file(repo, f):
 def stage_all(repo):
     index = repo.index
     # make a copy of untracked files for logging purposes 
-    # (otherwise they are no longer 'untracked' after added to index
+    # (otherwise they are no longer 'untracked' after added to index)
     untracked = repo.untracked_files
     index.add(repo.untracked_files)
     return (index, untracked)
@@ -76,7 +76,8 @@ def init_version(directory):
 
 def get_or_create_file(identifier, f):
     # identifier should look like 42409/1f39k0594
-    store = pairtree.PairtreeStorageClient(store_dir=tree_location, uri_base=uri_base)
+    store = pairtree.PairtreeStorageClient(store_dir=settings.TREE_LOCATION, uri_base=settings.URI_BASE)
+    identifier = identity.remove_scheme(identifier)
     if not store.exists(identifier):
         raise pairtree.ObjectNotFoundException("Object not found in pairtree: %s" % identifier)
     if store.exists(identifier, path=f):
@@ -90,7 +91,8 @@ def get_or_create_file(identifier, f):
 def put_file(identifier, f, bytestream):
     # the versioning stuff in here should probably be pulled into its own set
     #   of functions
-    store = pairtree.PairtreeStorageClient(store_dir=tree_location, uri_base=uri_base)
+    store = pairtree.PairtreeStorageClient(store_dir=settings.TREE_LOCATION, uri_base=settings.URI_BASE)
+    identifier = identity.remove_scheme(identifier)
     if not store.exists(identifier):
         raise pairtree.ObjectNotFoundException("Object not found in pairtree: %s" % identifier)
     #new_file = not store.exists(identifier, path=f)
@@ -101,7 +103,7 @@ def put_file(identifier, f, bytestream):
     # write the file
     store.put_stream(identifier, path='', stream_name=f, bytestream=bytestream)
     # stage and commit to version repo
-    (index, untracked) = stage_files(repo)    
+    (index, untracked) = stage_all(repo)
     commit_version(index, "updated file %s via put_file" % f)
     return True
 
