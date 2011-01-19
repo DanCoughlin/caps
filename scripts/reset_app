@@ -1,0 +1,6 @@
+#!/bin/bash
+RDF_STORE=/var/data/rdfstore.bdb/*
+PAIR_STORE=/dlt/caps/datastore/stewardship/pairtree_root/*
+rm -rf $RDF_STORE
+rm -rf $PAIR_STORE
+python ../manage.py reset pilot --noinput
