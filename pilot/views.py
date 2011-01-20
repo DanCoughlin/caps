@@ -3,6 +3,7 @@ import logging
 import mimetypes
 import os.path
 from services import identity, storage, annotate 
+from models import Philes
 from tempfile import mkdtemp
 from obj import DigitalObject
 from django.conf import settings
@@ -16,22 +17,14 @@ from django.template import RequestContext
 from django.utils.translation import ugettext as _
 
 def default(request, display):
+    phils = Philes.objects.filter(owner='dmc186')
     myobj = []
-    myobj.append(DigitalObject("annual report.pdf", "42409/6c510c54b", "pdf", "1", "08:45am"))
-    myobj.append(DigitalObject("certificate.txt", "42409/p829jb983", "txt", "8", "05-January"))
-    myobj.append(DigitalObject("EMC XAM Developers Pack 1.0(2).zip", "42409/zj91v4776", "zip", "21", "01-January"))
-    myobj.append(DigitalObject("my office.jpg", "42409/nn01sf24b", "image/jpg", "1", "01-May-2010", "image1"))
-    myobj.append(DigitalObject("FFLBLog.txt", "42409/8347n589v", "txt", "4", "13-Jan-2010"))
-    myobj.append(DigitalObject("github", "42409/4929jq005", "folder", "1005", "15-Jun-2009"))
-    myobj.append(DigitalObject("mug shot.jpg", "42409/0b17c601v", "image/jpg", "2", "28-Oct-2008", "image3"))
-    myobj.append(DigitalObject("a9e00a035b71173b348cd735c35.pdf", "42409/9w9996157", "pdf", "1", "27-Nov-2005"))
-    myobj.append(DigitalObject("9780271032689_02_FM02_pv-vi.pdf", "42409/p494ss70q", "pdf", "1", "05-Oct-2006"))
-    myobj.append(DigitalObject("Meeting Minutes", "42409/z0776s284", "folder", "501", "14-Mar-2006"))
-    myobj.append(DigitalObject("iPhoneAppProgrammingGuide.pdf", "42409/pv60d063h", "pdf", "3", "29-Feb-2004"))
-    myobj.append(DigitalObject("polite eating.jpg", "42409/sm508655g", "image/jpg", "1", "05-July-2003", "image2"))
-    myobj.append(DigitalObject("ECM0906.pdf", "42409/f9178r251", "pdf", "7", "31-Oct-2003"))
-    myobj.append(DigitalObject("question.jpg", "42409/0k35wv26k", "image/jpg", "3", "31-Mar-2002", "image4"))
-    myobj.append(DigitalObject("9780271032689_09_CH04_p113-148.pdf", "42409/9177pv46w", "pdf", "10", "18-Aug-2001"))
+    for p in phils:
+        myobj.append(DigitalObject("title", p.identifier, "type", "1", p.date_updated))
+    #myobj.append(DigitalObject("9780271032689_09_CH04_p113-148.pdf", "42409/9177pv46w", "pdf", "10", "18-Aug-2001"))
+    mylist = annotate.query("SELECT ?title WHERE { ?subj <http://purl.org/dc/elements/1.1/title> ?title }")
+    for tit in mylist:
+        print "title: %s" % tit
 
     
     return render_to_response('index.html', {'objects': myobj, 'display': display})
@@ -71,6 +64,15 @@ def handle_uploaded_file(udir, f):
         destination.write(chunk)
     destination.close()
 
+def is_archive(ct):
+    archive_types = ['application/x-gzip', 'application/x-tar', 'application/zip', 
+        'application/x-bzip2']
+    for ty in archive_types:
+        if ty == ct:
+            return True
+
+    return False
+
 def upload_object(request):
     if request.method == 'POST':
         
@@ -80,24 +82,38 @@ def upload_object(request):
         uploaddir = mkdtemp()
         print "dir:%s" % uploaddir
 
+        # $$$$$$$$$$$$$$$$$ ADD ZIP FILE HANDLING $$$$$$$$$$$$$$$$$$$$$$$$
+
         # loop over the files to upload
         for i in range(int(request.POST.get('upload_count'))):
             f = request.FILES['file_'+str(i+1)]
+            cb_key = 'unzip_cb_' + str(i+1)
+            if request.POST.has_key(cb_key):
+                zip = True
+            else:
+                zip = False
+            # if an archived file we don't want to remain archived
+            print "index:%s" % str(i+1)
             print "file:%s" % f 
-            handle_uploaded_file(uploaddir, f)
+            print "filetype:%s" % f.content_type
+            print "zip:%s" % zip 
+            if is_archive(f.content_type) and zip == False:
+                print "unzip the biatch"
+            print "------------\n"
+            #handle_uploaded_file(uploaddir, f)
 
         # done uploading the files 
 
-        repopath = storage.ingest_directory(ark, uploaddir)
-        identity.bind(ark, repopath, 'dmc186')
-
-        # loop over metadata to store
-        for i in range(int(request.POST.get('metadata_count'))):
-            k = request.POST.get('meta_type_'+str(i+1))
-            v = request.POST.get('meta_value_'+str(i+1))
-            print "%s %s=>%s" % (ark, k, v)
-            annotation = (ark, ("dc", "http://purl.org/dc/elements/1.1/", k), v) 
-            annotate.add(ark, annotation)
+#        repopath = storage.ingest_directory(ark, uploaddir)
+#        identity.bind(ark, repopath, 'dmc186')
+#
+#        # loop over metadata to store
+#        for i in range(int(request.POST.get('metadata_count'))):
+#            k = request.POST.get('meta_type_'+str(i+1))
+#            v = request.POST.get('meta_value_'+str(i+1))
+#            print "%s %s=>%s" % (ark, k, v)
+#            annotation = (ark, ("dc", "http://purl.org/dc/elements/1.1/", k), v) 
+#            annotate.add(ark, annotation)
        
         # done adding metadata 
         return HttpResponseRedirect('/pilot/list')

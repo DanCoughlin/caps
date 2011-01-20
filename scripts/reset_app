@@ -1,4 +1,18 @@
 #!/bin/bash
+#
+#   author: dmc186
+#   date: 01-19-2011
+#   file: reset_app
+#   purpose: this file will reset 
+#   the pilot application so we are starting
+#   fresh.  
+#   -Removes the rdf storage 
+#   -Removes the actual files 
+#   -Empties the database
+#   THIS IS NOT REVERSIBLE
+#
+
+
 RDF_STORE=/var/data/rdfstore.bdb/*
 PAIR_STORE=/dlt/caps/datastore/stewardship/pairtree_root/*
 rm -rf $RDF_STORE

@@ -129,7 +129,7 @@ function checkFileType(ff) {
     var id = ff.id.substring(index+1);
     var uzip = "unzip_" + id;
     var error = "error_ff_" + id;
-    //$('#'+error).hide();
+
     hideZipDialog(id);
     var archiveExts = [".zip", ".tar", ".bz2", ".gz"];
     var fname = ff.value;
@@ -271,10 +271,10 @@ additional files or metadata click the corresponding button.
 
 <div id="ff_{{forloop.counter}}"> 
 <label class="reg">File:</label> <input type="file" id="file_{{forloop.counter}}" name="file_{{forloop.counter}}" onchange="checkFileType(this);"/>
-<span id="unzip_{{forloop.counter}}" class="hidden" ><input type="checkbox" id="unzip_cb_{{forloop.counter}}" name="unzip_cb_{{forloop.counter}}" value="1" checked="true" />Unzip Contents</span>
+<span id="unzip_{{forloop.counter}}" class="hidden" ><input type="checkbox" id="unzip_cb_{{forloop.counter}}" name="unzip_cb_{{forloop.counter}}" value="1" />Zip Contents</span>
 <p id="error_ff_{{forloop.counter}}" class="note hidden">
 By default, this file will be unzipped and the contents stored individually. 
-Uncheck the box above if you would like to store the zip file as one file. 
+Check the box above if you would like to store the zip file as one file. 
 </p>
 </div>
 
