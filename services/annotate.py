@@ -37,7 +37,6 @@ def add(identifier, annotation):
     # get_or_create annotations file from storage
     #   hardcode this filename to about.ttl?
     annotations = storage.get_or_create_file(identifier, "about.n3")
-    print "identifier:%s" % identifier
 
     # instantiate a graph
     g = rdflib.ConjunctiveGraph()
@@ -46,20 +45,21 @@ def add(identifier, annotation):
         # pull existing annotations into in-memory rdf graph
         g.parse(StringIO.StringIO(annotations), format="n3")
 
-    print "graph:%s" % g.serialize(format="n3")
-    print "annotation:%s" % list(annotation)
+    # assume client sends list of strings/tuples (KLUDGE)
+    for assertion in annotation:
+        ns = rdflib.Namespace(assertion[1][1])
+        ns_label = assertion[1][0]
+        triple = (rdflib.URIRef(assertion[0]),
+                  ns[assertion[1][2]],
+                  rdflib.Literal(assertion[2]))
 
-    # assume client sends strings/tuples (KLUDGE)
-    ns = rdflib.Namespace(annotation[1][1])
-    ns_label = annotation[1][0]
-    triple = (rdflib.URIRef(annotation[0]),
-              ns[annotation[1][2]],
-              rdflib.Literal(annotation[2]))
+        # attach annotation to annotations file
+        g.bind(ns_label, ns)
+        g.add(triple)
 
-    # attach annotation to annotations file
-    g.bind(ns_label, ns)
-    print "triple: %s" % list(triple)
-    g.add(triple)
+        # write annotation to central datastore
+        #   push this off till future iteration
+        __rdfstore_write(triple, ns_label, ns)
 
     # validate annotations (don't write garbage)
     #   maybe rdflib is doing this for us in g.parse & g.add?
@@ -69,9 +69,6 @@ def add(identifier, annotation):
     #   this should ask storage to up the repo version
     storage.put_file(identifier, "about.n3", g.serialize(format="n3"))
 
-    # write annotation to central datastore
-    #   push this off till future iteration
-    __rdfstore_write(triple, ns_label, ns)
     return True
 
 def query(q):

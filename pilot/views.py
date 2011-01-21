@@ -107,13 +107,15 @@ def upload_object(request):
 #        repopath = storage.ingest_directory(ark, uploaddir)
 #        identity.bind(ark, repopath, 'dmc186')
 #
+#        assertions = []
 #        # loop over metadata to store
 #        for i in range(int(request.POST.get('metadata_count'))):
 #            k = request.POST.get('meta_type_'+str(i+1))
 #            v = request.POST.get('meta_value_'+str(i+1))
 #            print "%s %s=>%s" % (ark, k, v)
-#            annotation = (ark, ("dc", "http://purl.org/dc/elements/1.1/", k), v) 
-#            annotate.add(ark, annotation)
+#            assertion = (ark, ("dc", "http://purl.org/dc/elements/1.1/", k), v) 
+#            assertions.append(annotation)
+#        annotation.add(ark, assertions)
        
         # done adding metadata 
         return HttpResponseRedirect('/pilot/list')

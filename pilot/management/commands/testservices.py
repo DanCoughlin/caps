@@ -30,8 +30,10 @@ class Command(BaseCommand):
         fixity.bind(new_id, fix)
 
         print "adding an annotation"
-        annotation = (new_id, ("dc", "http://purl.org/dc/elements/1.1/", "title"), "this is a test title")
-        annotate.add(new_id, annotation)
+        assertions = []
+        assertions.append((new_id, ("dc", "http://purl.org/dc/elements/1.1/", "title"), "this is a test title"))
+        assertions.append((new_id, ("dc", "http://purl.org/dc/elements/1.1/", "author"), "Shakespeare, Billy"))
+        annotate.add(new_id, assertions)
         print "annotation added"
         print "ending"
         return 
