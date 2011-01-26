@@ -140,7 +140,7 @@ class ServicesTest(TestCase):
     def test_remove_file(self):
         #Remove a file (rm, commit)
         self.assertTrue(True)
-
+ 
     def test_rename_file(self):
         #Rename a file (mv, commit)
         self.assertTrue(True)

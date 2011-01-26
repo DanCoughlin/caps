@@ -2,6 +2,10 @@ import datetime
 import logging
 import mimetypes
 import os.path
+import zipfile
+import tarfile
+import re
+import string
 from services import identity, storage, annotate 
 from models import Philes
 from tempfile import mkdtemp
@@ -56,13 +60,65 @@ def new_object(request, type):
     
     return render_to_response('ingest.html', {'meta': meta_values, 'batch': batch, 'range': range(r)});
 
-def handle_uploaded_file(udir, f):
+
+def handle_file_upload(udir, f):
     fname = os.path.join(udir, f.name)
     print "saving %s" % fname
     destination = open(fname, 'wb+')
     for chunk in f.chunks():
         destination.write(chunk)
     destination.close()
+
+
+""" 
+handles unpacking many archive types from
+the is_archive function
+afile is the location of the archived file
+atype is the type of file from the content_type
+    passed via form
+"""
+def unpack_archive(afile, atype):
+    tmp_pth = os.path.dirname(afile)
+    print "path:%s" % tmp_pth
+
+    suffix = atype.split("/")    
+    if len(suffix) != 2:
+        return False
+    
+    if suffix[1] == 'zip':  
+        print "zip"
+        af = zipfile.ZipFile(afile, "r")
+
+    elif suffix[1] == 'x-tar':
+        print "tar"
+        af = tarfile.open(afile, "r")
+
+    elif suffix[1] == 'x-gzip':
+        print "gzip"
+        af = tarfile.open(afile, "r:gz")
+
+    elif suffix[1] == 'x-bzip2':
+        print "bzip2"
+        af = tarfile.open(afile, "r:bz2")
+
+    else:
+        print "no match for archive: %s" % suffix[1]
+        return False
+
+    # Sanitize - ensure no absolute paths or '../' 
+    if suffix[1] == 'zip':
+        for name in af.namelist():
+            if os.path.isabs(name) or re.match('^\.\.', name):
+                print "file no good: %s" % name
+                return False
+    else:
+        for f in af:
+            if os.path.isabs(f.name) or re.match('^\.\.', f.name):
+                print "file no good: %s" % f.name
+                return False
+
+    af.extractall(tmp_pth)
+    af.close()
 
 def is_archive(ct):
     archive_types = ['application/x-gzip', 'application/x-tar', 'application/zip', 
@@ -82,25 +138,21 @@ def upload_object(request):
         uploaddir = mkdtemp()
         print "dir:%s" % uploaddir
 
-        # $$$$$$$$$$$$$$$$$ ADD ZIP FILE HANDLING $$$$$$$$$$$$$$$$$$$$$$$$
-
         # loop over the files to upload
         for i in range(int(request.POST.get('upload_count'))):
             f = request.FILES['file_'+str(i+1)]
             cb_key = 'unzip_cb_' + str(i+1)
-            if request.POST.has_key(cb_key):
-                zip = True
-            else:
-                zip = False
-            # if an archived file we don't want to remain archived
+            # if user does not want to unpack or just regular file upload
             print "index:%s" % str(i+1)
             print "file:%s" % f 
             print "filetype:%s" % f.content_type
-            print "zip:%s" % zip 
-            if is_archive(f.content_type) and zip == False:
-                print "unzip the biatch"
+            # unpacking a file for user and uploading that
+            handle_file_upload(uploaddir, f)
+            if request.POST.has_key(cb_key) == False and is_archive(f.content_type):
+                print "unpack the biatch"
+                aname = os.path.join(uploaddir, f.name)
+                unpack_archive(aname, f.content_type)
             print "------------\n"
-            #handle_uploaded_file(uploaddir, f)
 
         # done uploading the files 
 
