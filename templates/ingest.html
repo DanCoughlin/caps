@@ -113,6 +113,24 @@ $(document).ready(function()
 );
 */
 
+
+/*
+ * the form fields on this page are numbered
+ * with '_N' where n is the number of it's
+ * appearance within the form.  This function
+ * will return N for the form field
+ */
+function getFFId(ff) {
+    var index = ff.id.lastIndexOf("_");
+    if( index == -1) {
+        return -1;
+    }
+    // get the id number to use
+    var id = ff.id.substring(index+1);
+    return id;
+}
+
+
 /*
  * this function determines if the user is trying to upload
  * a zip file (or similar type) and displays a message to the 
@@ -121,13 +139,10 @@ $(document).ready(function()
  * determines the file type by extension
  */
 function checkFileType(ff) {
-    var index = ff.id.lastIndexOf("_");
-    if( index == -1) {
+    var id;
+    if ((id = getFFId(ff)) == -1) {
         return;
     }
-    // get the id number to use
-    var id = ff.id.substring(index+1);
-    var uzip = "unzip_" + id;
     var error = "error_ff_" + id;
 
     hideZipDialog(id);
@@ -141,9 +156,24 @@ function checkFileType(ff) {
     // show the error message
     if( $.inArray(ext, archiveExts) != -1) {
         $('#'+error).hide().fadeIn('slow');
-        $('#'+uzip).show();
     }
 
+}
+
+
+/*
+ * this function should display the basename of a file being upload
+ * so a user can quickly see the file they are uploading.  This is to 
+ * make it a bit easier in the case that a file path extends beyond the length
+ * of the file input
+ */
+function displayBaseName(ff) {
+    var id;
+    if ((id = getFFId(ff)) == -1) {
+        return;
+    }
+    // set basename id to the basename of the file upload
+    $('#base_name_'+id).html($('#file_'+id).attr("value"));    
 }
 
 
@@ -153,7 +183,6 @@ function checkFileType(ff) {
  */
 function hideZipDialog(id) {
     $('#error_ff_'+id).hide();
-    $('#unzip_'+id).hide();
 }
 
 
@@ -163,8 +192,8 @@ function hideZipDialog(id) {
  */
 function addFileInput() {
     var fi_dupe = new Object();
-    fi_dupe['updateIds'] = ["ff_1", "file_1", "unzip_1", "unzip_cb_1", "error_ff_1"];
-    fi_dupe['prefixIds'] = ["ff_", "file_", "unzip_", "unzip_cb_", "error_ff_"];
+    fi_dupe['updateIds'] = ["ff_1", "file_1", "base_name_1", "unzip_cb_1", "error_ff_1"];
+    fi_dupe['prefixIds'] = ["ff_", "file_", "base_name_", "unzip_cb_", "error_ff_"];
     fi_dupe['nodeId'] = 'ff_1';
     fi_dupe['nodePrefix'] = 'ff_';
     fi_dupe['countId'] = 'upload_count';
@@ -174,6 +203,7 @@ function addFileInput() {
     // hide the zip elements 
     hideZipDialog(nxtId);
 }
+
 
 /*
  * this function adds the necessary elements to
@@ -203,6 +233,9 @@ function addMetaInput() {
  *          the suffix that indicates which element number this is
  * duplicate.countId => id of the form element that is keeping track 
  *           of the number of elements we have duplicated
+ * 
+ * SPAN elements will be cleared when duplicated.  The inner 
+ * HTML will be blank on all SPAN elements.
  */
 function addFormElement(duplicate) {
     var cv = $('#'+duplicate.countId).attr("value");
@@ -219,11 +252,18 @@ function addFormElement(duplicate) {
         if (elem.attr("name")) {
             elem.attr("name", newId); 
         }
+        
+        // clear any potential value carry overs
         if (elem.is("input")) {
             elem.attr("value", "");
         } 
         else if (elem.is("select")) {
             elem.attr("selectedIndex", 0);
+        }
+        // any span element will be cleared
+        else if (elem.is("span")) {
+            alert(elem);
+            elem.html("");
         }
     }
    
@@ -232,6 +272,41 @@ function addFormElement(duplicate) {
     $('#'+duplicate.countId).attr("value", nxtId); 
 
     return nxtId;
+}
+
+
+/*
+ * function adds metadata fields for the object type
+ * being uploaded
+ *
+ * THIS FUNCTIONING IS NOT WORKING FULLY!
+        added some functionality for display purposes
+        issues exist with overwriting existing selections
+        and other complexities
+ */
+function addMetadata(field) {
+    erMetaInputs = ['rights', 'source', 'publisher', 'title'];
+    imMetaInputs = ['creator', 'format', 'source'];
+    mpMetaInputs = ['title', 'type'];
+    
+    metaInputs = [null, erMetaInputs, mpMetaInputs, imMetaInputs];
+
+    count = parseInt($('#metadata_count').attr("value"));
+    // get a listing of the current metadata fields
+    existing = new Array();
+    for (var i=1; i <= count; i++) {
+        existing.push($('#meta_type_'+i).attr("value"));
+    }
+
+    // add meta field, if it is not already existin
+    // loop over the meta fields to add and if they aren't
+    // already there, add 'em
+    for (var i=0; i < metaInputs[field.selectedIndex].length; i++) {
+        if ($.inArray(metaInputs[field.selectedIndex][i], existing) == -1) {
+            addMetaInput();
+            $('#meta_type_'+(i+count+1)).attr("value", metaInputs[field.selectedIndex][i]);
+        }
+    }
 }
 
 {% endblock %}
@@ -266,16 +341,32 @@ additional files or metadata click the corresponding button.
 {% endif %}
 <input type="hidden" name="metadata_count" id="metadata_count" value="1" />
 
+
+<div id="object_choice">
+<label class="reg">Object Type</label>
+<select name="object_type" id="object_type" onchange="addMetadata(this);">
+    <option value="">Choose Object Type</option>
+    <option value="erecord">e-record</option>
+    <option value="imagecollection">image collection</option>
+    <option value="mapcollection">map collection</option>
+</select>
+</div>
+
+<br />
 <!-- FILE UPLOAD -->
 {% for i in range %}
 
 <div id="ff_{{forloop.counter}}"> 
-<label class="reg">File:</label> <input type="file" id="file_{{forloop.counter}}" name="file_{{forloop.counter}}" onchange="checkFileType(this);"/>
-<span id="unzip_{{forloop.counter}}" class="hidden" ><input type="checkbox" id="unzip_cb_{{forloop.counter}}" name="unzip_cb_{{forloop.counter}}" value="1" />Zip Contents</span>
+
+<label class="reg">File:</label> 
+<input type="file" id="file_{{forloop.counter}}" name="file_{{forloop.counter}}" onchange="checkFileType(this); displayBaseName(this);" size="50"/> 
+<span id="base_name_{{forloop.counter}}"></span>
 <p id="error_ff_{{forloop.counter}}" class="note hidden">
 By default, this file will be unzipped and the contents stored individually. 
-Check the box above if you would like to store the zip file as one file. 
+Check the box if you would like to store the zip file as one file. 
+<input type="checkbox" id="unzip_cb_{{forloop.counter}}" name="unzip_cb_{{forloop.counter}}" value="1" />Zip Contents
 </p>
+
 </div>
 
 {% endfor %}

@@ -88,19 +88,15 @@ def unpack_archive(afile, atype):
     if suffix[1] == 'zip':  
         print "zip"
         af = zipfile.ZipFile(afile, "r")
-
     elif suffix[1] == 'x-tar':
         print "tar"
         af = tarfile.open(afile, "r")
-
     elif suffix[1] == 'x-gzip':
         print "gzip"
         af = tarfile.open(afile, "r:gz")
-
     elif suffix[1] == 'x-bzip2':
         print "bzip2"
         af = tarfile.open(afile, "r:bz2")
-
     else:
         print "no match for archive: %s" % suffix[1]
         return False

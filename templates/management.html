@@ -9,16 +9,25 @@
 }
 {% endblock %}
 
+{% block jsfiles %}
+<script src="/site_media/js/jquery.jstree.js" type="text/javascript" language="javascript"></script>
+{% endblock %}
+
+
 {% block jscode %}
 $(document).ready(function() {
-    $("#root ul").each(function() {$(this).css("display", "none");});
-    $("#root .category").click(function() {
-        var childid = "#" + $(this).attr("childid");
-        if ($(childid).css("display") == "none") {$(childid).css("display", "block");}
-        else {$(childid).css("display", "none");}
-        if ($(this).hasClass("cat_close")) {$(this).removeClass("cat_close").addClass("cat_open");}
-        else{$(this).removeClass("cat_open").addClass("cat_close");}
+    $("#y2010").click(function () { 
+        $("#demo1").jstree("toggle_node","#phtml_1");
     });
+    $("#i2010").click(function () { 
+        $("#demo1").jstree("toggle_node","#phtml_1");
+    });
+
+    $("#demo1")
+        .bind("open_node.jstree close_node.jstree", function (e) {
+            //$("#log1").html("Last operation: " + e.type);
+        })
+        .jstree({ "plugins" : [ "themes", "html_data" ] });
 });
 {% endblock %}
 
@@ -34,6 +43,46 @@ $(document).ready(function() {
 </p>
 
 <h4>Included Files:</h4>
+<!--
+<div style="height: 200px;" id="demo1"  class="demo jstree jstree-0 jstree-default"> 
+    <ul>
+        <li class="jstree-closed" id="phtml_1">
+            <ins id="i1" class="jstree-icon">&nbsp;</ins>
+            <a href="#" id="y2010"><ins class="jstree-icon">&nbsp;</ins>2010</a>
+            <ul style="">
+                <li class="jstree-leaf" id="phtml_2"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>January</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>February</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>March</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>April</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>May</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>June</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>July</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>August</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>September</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>October</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>November</a></li>
+                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
+                <a href="#"><ins class="jstree-icon">&nbsp;</ins>December</a></li>
+            </ul>
+        </li>
+        <li class="jstree-last jstree-leaf" id="phtml_4">
+            <ins class="jstree-icon">&nbsp;</ins>
+            <a href="#" id="y2011"><ins class="jstree-icon">&nbsp;</ins>2011</a>
+        </li>
+    </ul>
+</div>
+-->
 <p>
 <span class="detail">&rsaquo;&rsaquo;</span>May-2010.txt<br />
 <span class="detail">&rsaquo;&rsaquo;</span>June-2010.txt<br />
