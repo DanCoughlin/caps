@@ -288,8 +288,9 @@ function addMetadata(field) {
     erMetaInputs = ['rights', 'source', 'publisher', 'title'];
     imMetaInputs = ['creator', 'format', 'source'];
     mpMetaInputs = ['title', 'type'];
-    
-    metaInputs = [null, erMetaInputs, mpMetaInputs, imMetaInputs];
+   
+    // array order here should mimic the drop down for object types 
+    metaInputs = [null, erMetaInputs, imMetaInputs, mpMetaInputs];
 
     count = parseInt($('#metadata_count').attr("value"));
     // get a listing of the current metadata fields
@@ -303,8 +304,14 @@ function addMetadata(field) {
     // already there, add 'em
     for (var i=0; i < metaInputs[field.selectedIndex].length; i++) {
         if ($.inArray(metaInputs[field.selectedIndex][i], existing) == -1) {
-            addMetaInput();
-            $('#meta_type_'+(i+count+1)).attr("value", metaInputs[field.selectedIndex][i]);
+            if( $('#meta_type_'+count).attr("value") == "select meta type" ) {
+                $('#meta_type_'+count).attr("value", metaInputs[field.selectedIndex][i]);
+            }
+            else {
+                addMetaInput();
+                newcount = parseInt($('#metadata_count').attr("value"));
+                $('#meta_type_'+(newcount)).attr("value", metaInputs[field.selectedIndex][i]);
+            }
         }
     }
 }
