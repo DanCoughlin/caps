@@ -162,29 +162,52 @@ class VersioningTest(TestCase):
         """
         TODO: VERSION MULTIPLE FILES, MULTIPLE COMMITS
         """
-        (h, f) = tempfile.mkstemp(dir=self.workdir)
-        i = storage.stage_file(repo, f)
-        c1 = storage.commit_version(i, "first")
-        with open(f, "a") as fh:
-            fh.write("second")
-        i = storage.stage_file(repo, f)
-        c2 = storage.commit_version(i, "second")
-        with open(f, "a") as fh:
-            fh.write("third")
-        i = storage.stage_file(repo, f)
-        c3 = storage.commit_version(i, "third")
-        versions = storage._list_versions(repo, f)
+        (h, f1) = tempfile.mkstemp(dir=self.workdir)
+        (h, f2) = tempfile.mkstemp(dir=self.workdir)
+        print "first stage (both)"
+        (i, u) = storage.stage_all(repo)
+        c1 = storage.commit_version(i, "initial for both")
+        with open(f1, "a") as fh:
+            fh.write("first edit to f1")
+        print "second stage (f1)"
+        i = storage.stage_file(repo, f1)
+        c2 = storage.commit_version(i, "second for f1")
+        with open(f2, "a") as fh:
+            fh.write("first edit to f2")
+        print "third stage (f2)"
+        i = storage.stage_file(repo, f2)
+        c3 = storage.commit_version(i, "second for f2")
+        with open(f1, "a") as fh:
+            fh.write("second edit to f1")
+        with open(f2, "a") as fh:
+            fh.write("second edit to f2")
+        print "fourth stage (both)"
+        (i, u) = storage.stage_all(repo)
+        c4 = storage.commit_version(i, "third for both")
+        with open(f2, "a") as fh:
+            fh.write("third edit to f2")
+        print "fifth stage (f2)"
+        i = storage.stage_file(repo, f2)
+        c5 = storage.commit_version(i, "fourth for f2")
+        
+        f1versions = storage._list_versions(repo, f1)
+        f2versions = storage._list_versions(repo, f2)
         # returns a list. each item is a dict representing a commit,
         #   with the key = commit id and the value = commit message
-        latest_version = versions.pop(0)
-        self.assertEqual(latest_version.keys()[0], c3.hexsha)
-        self.assertEqual(latest_version.values()[0], c3.message)
-        latest_version = versions.pop(0)
-        self.assertEqual(latest_version.keys()[0], c2.hexsha)
-        self.assertEqual(latest_version.values()[0], c2.message)
-        latest_version = versions.pop(0)
-        self.assertEqual(latest_version.keys()[0], c1.hexsha)
-        self.assertEqual(latest_version.values()[0], c1.message)
+        self.assertEqual(len(f1versions), 3)
+        self.assertEqual(len(f2versions), 4)
+        latest_f1version = f1versions.pop(0)
+        self.assertEqual(latest_f1version.keys()[0], c4.hexsha)
+        self.assertEqual(latest_f1version.values()[0], c4.message)
+        latest_f2version = f2versions.pop(0)
+        self.assertEqual(latest_f2version.keys()[0], c5.hexsha)
+        self.assertEqual(latest_f2version.values()[0], c5.message)
+        earliest_f1version = f1versions.pop()
+        self.assertEqual(earliest_f1version.keys()[0], c1.hexsha)
+        self.assertEqual(earliest_f1version.values()[0], c1.message)
+        earliest_f2version = f2versions.pop()
+        self.assertEqual(earliest_f2version.keys()[0], c1.hexsha)
+        self.assertEqual(earliest_f2version.values()[0], c1.message)
 
     def test_view_version_history(self):
         #View version history (log)

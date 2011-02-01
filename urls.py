@@ -15,6 +15,7 @@ urlpatterns = patterns('',
     (r'^pilot/upload_progress/$', 'caps.pilot.views.upload_progress'),
     (r'^getIdentifier', 'caps.pilot.views.get_identifier'),
     (r'^getFixity', 'caps.pilot.views.get_fixity'),
+    (r'^pilot/upload_batch$', 'caps.pilot.views.upload_batch'),
     (r'^pilot/upload', 'caps.pilot.views.upload_object'),
     (r'^pilot/screenshots', 'caps.pilot.views.screenshots'),
 

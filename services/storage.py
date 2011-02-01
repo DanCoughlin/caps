@@ -65,6 +65,8 @@ def commit_version(index, message=''):
 
 def stage_file(repo, f):
     index = repo.index
+    print "untracked: %s" % repo.untracked_files
+    print "index: %s" % index.entries
     index.add([f])
     return index
 
@@ -73,6 +75,8 @@ def stage_all(repo):
     # make a copy of untracked files for logging purposes 
     # (otherwise they are no longer 'untracked' after added to index)
     untracked = repo.untracked_files
+    print "untracked: %s" % repo.untracked_files
+    print "index: %s" % index.entries
     index.add(repo.untracked_files)
     return (index, untracked)
 
@@ -105,10 +109,10 @@ def list_versions(identifier, f=None):
     return _list_versions(repo, f)
 
 def _list_versions(repo, f=None):
-    if not f:
-        log_entries = repo.git.log("--pretty=oneline").split("\n")
+    if f:
+        log_entries = repo.git.log("--pretty=oneline", f).split("\n")
     else:
-        log_entries = repo.git.log("--pretty=oneline %s" % f).split("\n")
+        log_entries = repo.git.log("--pretty=oneline").split("\n")
     versions = []
     for entry in log_entries:
         split = entry.split()

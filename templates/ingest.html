@@ -154,7 +154,7 @@ function checkFileType(ff) {
     }
     var ext = fname.substring(dot); 
     // show the error message
-    if( $.inArray(ext, archiveExts) != -1) {
+    if ($.inArray(ext, archiveExts) != -1) {
         $('#'+error).hide().fadeIn('slow');
     }
 
@@ -262,7 +262,6 @@ function addFormElement(duplicate) {
         }
         // any span element will be cleared
         else if (elem.is("span")) {
-            alert(elem);
             elem.html("");
         }
     }
@@ -322,11 +321,19 @@ Choose a file to upload, add metadata and click &quotUpload Object&quot;
 </p>
 
 {% block content %}
+<!-- upload different url for batch -->
+{% if batch %}
+
+<form name="" id="upload_form" action="/pilot/upload_batch" method="POST" enctype="multipart/form-data" class="uniForm">
+
+{% else %}
+
 <form name="" id="upload_form" action="/pilot/upload" method="POST" enctype="multipart/form-data" class="uniForm">
 
+{% endif %}
 
 <fieldset>
-<legend>Upload New Object</legend>
+<legend>{{label}}</legend>
 
 <p style="margin: 0; padding-left: 10px;margin-bottom: 15px; ">
 Choose the file you would like to ingest.  Once you have choosen a file to uplaod, you <br />
@@ -337,18 +344,16 @@ additional files or metadata click the corresponding button.
 
 {% if batch %}
 <!-- batch upload -->
-<input type="hidden" name="batch" value="1" />
-<input type="hidden" name="upload_count" id="upload_count" value="5" />
+<input type="hidden" name="upload_count" id="upload_count" value="2" />
 
 {% else %}
 <!-- single upload -->
-<input type="hidden" name="batch" value="0" />
 <input type="hidden" name="upload_count" id="upload_count" value="1" />
-
-{% endif %}
 <input type="hidden" name="metadata_count" id="metadata_count" value="1" />
 
+{% endif %}
 
+{% if not batch %}
 <div id="object_choice">
 <label class="reg">Object Type</label>
 <select name="object_type" id="object_type" onchange="addMetadata(this);">
@@ -360,8 +365,25 @@ additional files or metadata click the corresponding button.
 </div>
 
 <br />
+{% endif %}
+
 <!-- FILE UPLOAD -->
-{% for i in range %}
+
+{% if batch %}
+
+<div id="ff_0"> 
+<label class="reg">Spreadsheet:</label> 
+<input type="file" id="file_0" name="file_0" onchange="displayBaseName(this);" size="50"/> 
+<span id="base_name_0"></span>
+</div>
+
+<div id="ff_1"> 
+<label class="reg">Archive File:</label> 
+<input type="file" id="file_1" name="file_1" onchange="displayBaseName(this);" size="50"/> 
+<span id="base_name_1"></span>
+</div>
+
+{% else %}
 
 <div id="ff_{{forloop.counter}}"> 
 
@@ -376,8 +398,9 @@ Check the box if you would like to store the zip file as one file.
 
 </div>
 
-{% endfor %}
+{% endif %}
 
+{% if not batch %}
 <!-- ADD MORE FILE UPLOADS -->
 <div id="addfile">
 <a href="#" onclick="addFileInput(); return false;">+Add Files</a>
@@ -403,10 +426,11 @@ Metadata will be assigned to all files.
 <div id="addmeta">
 <a href="#" onclick="addMetaInput(); return false;">+Add Metadata</a>
 </div>
-
-<!-- SUBMIT -->
+{% endif %}
+<!-- SUBMIT --> 
 <p style="padding-left: 150px">
-<input type="submit" value="Upload Object" />
+
+<input type="submit" value="{{label}}" />
 </p>
 </fieldset>
 </form>
