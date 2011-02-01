@@ -65,8 +65,6 @@ def commit_version(index, message=''):
 
 def stage_file(repo, f):
     index = repo.index
-    print "untracked: %s" % repo.untracked_files
-    print "index: %s" % index.entries
     index.add([f])
     return index
 
@@ -75,9 +73,8 @@ def stage_all(repo):
     # make a copy of untracked files for logging purposes 
     # (otherwise they are no longer 'untracked' after added to index)
     untracked = repo.untracked_files
-    print "untracked: %s" % repo.untracked_files
-    print "index: %s" % index.entries
     index.add(repo.untracked_files)
+    index.add([diff.a_blob.name for diff in index.diff(None)])
     return (index, untracked)
 
 def init_version(directory):
