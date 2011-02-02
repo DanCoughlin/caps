@@ -18,12 +18,12 @@ def get_store(identifier, location=None):
         tree_location = settings.TREE_LOCATION
     store = pairtree.PairtreeStorageClient(store_dir=tree_location,
                                            uri_base=settings.URI_BASE)
-    identifier = identity.remove_scheme(identifier)
-    if not store.exists(identifier):
-        raise pairtree.ObjectNotFoundException(
-            "Object not found in pairtree: %s" % identifier)
+    #identifier = identity.remove_scheme(identifier)
+    #if not store.exists(identifier):
+    #    raise pairtree.ObjectNotFoundException(
+    #        "Object not found in pairtree: %s" % identifier)
     return store
-
+    
 def ingest_directory(identifier, source, override_tree_location=None):
     #s = store_task.add.delay(tree_location=tree_location,
     #                         identifier=identifier,
@@ -160,7 +160,7 @@ def put_file(identifier, f, bytestream):
     # stage and commit to version repo
     (index, untracked) = stage_all(repo)
     commit_version(index, "updated file %s via put_file" % f)
-    return True
+    return None
 
 
 """

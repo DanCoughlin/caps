@@ -1,7 +1,5 @@
 import rdflib
 import StringIO
-from datetime import datetime
-from tempfile import mkdtemp
 from contextlib import contextmanager
 from caps.services import storage, identity
 
