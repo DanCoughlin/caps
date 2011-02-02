@@ -77,6 +77,9 @@ def stage_all(repo):
     index.add([diff.a_blob.name for diff in index.diff(None)])
     return (index, untracked)
 
+def checkout_file(repo, f, commit_id):
+    return repo.git.checkout(commit_id, f)
+    
 def init_version(directory):
     # pass in a directory, return a git.Repo
     # note that init() is a safe operation, won't break an existing repo
