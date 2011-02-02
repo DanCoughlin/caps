@@ -6,6 +6,9 @@ import zipfile
 import tarfile
 import re
 import string
+import xlrd
+import shutil
+import sys
 from services import identity, storage, annotate 
 from models import Philes
 from tempfile import mkdtemp
@@ -49,6 +52,9 @@ def get_fixity(request):
     return render_to_response('fixity.html', {'fixity' : h, 'filename': fil, 'algorithm': algorithm});
 
 
+"""
+display form to upload a new object or batch upload
+"""
 def new_object(request, type):
     batch = True
     label = 'Upload New Batch'
@@ -63,62 +69,94 @@ def new_object(request, type):
     return render_to_response('ingest.html', {'meta': meta_values, 'batch': batch, 'label': label});
 
 
-def handle_file_upload(udir, f):
-    fname = os.path.join(udir, f.name)
-    print "saving %s" % fname
-    destination = open(fname, 'wb+')
-    for chunk in f.chunks():
-        destination.write(chunk)
-    destination.close()
-    return fname
-
-
-""" 
-handles unpacking many archive types from
-the is_archive function
-afile is the location of the archived file
-atype is the type of file from the content_type
-    passed via form
 """
-def unpack_archive(afile_name, fil):
-    atype = fil.content_type
-    tmp_pth = os.path.dirname(afile_name)
-    print "path:%s" % tmp_pth
+returns a data dictionary mapping of the spreadsheet to our dc elements
+for batch upload
+"""
+def get_meta_dict(spreadsheet):
+    # make sure filename is set to xls file
+    #book = xlrd.open_workbook('/Users/dmc186/test.xls')
+    book = xlrd.open_workbook(spreadsheet)
+    # grab first sheet of xls
+    sheet = book.sheet_by_index(0)
+    # first row of sheet = column headings/metadata elements
+    headings = sheet.row(0)
+    # the reason for this dict and for loop is to make order of headings not matter
+    fields = dict(filename='', title=[], creator=[], date=[], coverage=[],
+                  description=[], type=[], subject=[], source=[],
+                  format=[], rights=[], relation=[], identifier=[],
+                  contributor=[], publisher=[])
 
-    suffix = atype.split("/")    
-    if len(suffix) != 2:
-        return False
-    
-    if suffix[1] == 'zip':  
-        print "zip"
-        af = zipfile.ZipFile(afile_name, "r")
-    elif suffix[1] == 'x-tar':
-        print "tar"
-        af = tarfile.open(afile_name, "r")
-    elif suffix[1] == 'x-gzip':
-        print "gzip"
-        af = tarfile.open(afile_name, "r:gz")
-    elif suffix[1] == 'x-bzip2':
-        print "bzip2"
-        af = tarfile.open(afile_name, "r:bz2")
-    else:
-        print "no match for archive: %s" % suffix[1]
-        return False
+    for i, field in enumerate(headings):
+        field.value = field.value.strip()
 
-    # Sanitize - ensure no absolute paths or '../' 
-    if suffix[1] == 'zip':
-        for name in af.namelist():
-            if os.path.isabs(name) or re.match('^\.\.', name):
-                print "file no good: %s" % name
-                return False
-    else:
-        for f in af:
-            if os.path.isabs(f.name) or re.match('^\.\.', f.name):
-                print "file no good: %s" % f.name
-                return False
+        if field.value == 'Filename':
+            fields['filename'] = i
+        elif field.value in ('Creator', 'Creator 2',):
+            fields['creator'].append(i)
+        elif field.value in ('Title', 'Title/View', 'Other title',):
+            fields['title'].append(i)
+        elif field.value in ('Date', 'Earliest date', 'Latest date',
+                             'Date Photographed',):
+            fields['date'].append(i)
+        elif field.value in ('Current Location', 'Discovery location',
+                             'Former location',):
+            fields['coverage'].append(i)
+        elif field.value in ('Description of work', 'Description of view',
+                           'Inscription',):
+            fields['description'].append(i)
+        elif field.value in ('Work Type', 'Style of work', 'Resource type',):
+            fields['type'].append(i)
+        elif field.value in ('Culture', 'Subject of work',):
+            fields['subject'].append(i)
+        elif field.value in ('Source',):
+            fields['source'].append(i)
+        elif field.value in ('File format', 'Image size',):
+            fields['format'].append(i)
+        elif field.value in ('Permitted uses', 'Public/Private',):
+            fields['rights'].append(i)
+        elif field.value in ('Collection', 'Sub collection',):
+            fields['relation'].append(i)
+        elif field.value in ('Record ID',):
+            fields['identifier'].append(i)
+        elif field.value in ('Cataloger',):
+            fields['contributor'].append(i)
+        elif field.value in ('Copyright Holder',):
+            fields['publisher'].append(i)
+        else:
+            pass
 
-    af.extractall(tmp_pth)
-    af.close()
+    metadata = {}
+
+    # loop over the rows in the spreadsheet and create
+    # a data dict for each row where the filename is 
+    # the key 
+    #  the metadata dictionary is a dictionary of dictionaries
+    # where the key is the filename and the value of that dict 
+    # is dictionary of metatdata elements with a list of the values
+    # for that element as the "value"
+    for row_num in range(1, sheet.nrows):
+        # don't add the headings
+        if not row_num == 0:
+            row = sheet.row(row_num)
+            fn = row[fields['filename']].value
+            # key for each row is the filename to key on the zip file
+            metadata[fn] = {}
+            dcfields = ['title', 'creator', 'date', 'coverage', 'description',
+                'type', 'subject', 'source', 'format', 'rights', 'relation', 
+                'identifier', 'contributor', 'publisher']
+
+            # loop over the fields and create more dicts of lists                 
+            # key is one of the dcfields and the value is a list of that
+            # metadatas values from the spreadsheet
+            for i in dcfields:
+                metadata[fn][i] = []
+                # loop over mapped elements
+                for j in fields[i]:
+                    if not row[j].value == "":
+                        # append the value from the spreadsheet to the list
+                        metadata[fn][i].append(row[j].value)
+    return metadata 
 
 
 """
@@ -138,100 +176,60 @@ def is_spreadsheet(uploadfile):
     return uploadfile.content_type in spreadsheet_types     
 
 
-def get_meta_dict(spreadsheet):
-   # make sure filename is set to xls file
-   #book = xlrd.open_workbook('/Users/dmc186/test.xls')
-   book = xlrd.open_workbook(spreadsheet)
-   # grab first sheet of xls
-   sheet = book.sheet_by_index(0)
-   # first row of sheet = column headings/metadata elements
-   headings = sheet.row(0)
-   # the reason for this dict and for loop is to make order of headings not matter
-   fields = {}
-   fields['title'] = []
-   fields['creator'] = []
-   fields['date'] = []
-   fields['coverage'] = []
-   fields['description'] = []
-   fields['type'] = []
-   fields['subject'] = []
-   fields['source'] = []
-   fields['format'] = []
-   fields['rights'] = []
-   fields['relation'] = []
-   fields['identifier'] = []
-   fields['contributor'] = []
-   fields['publisher'] = []
+"""
+upload a single file to a temp directory
+"""
+def handle_file_upload(udir, f):
+    fname = os.path.join(udir, f.name)
+    print "saving %s" % fname
+    with open(fname, 'wb+') as destination:
+        for chunk in f.chunks():
+            destination.write(chunk)
+    return fname
 
-   for i, field in enumerate(headings):
-      field.value = field.value.strip()
-      # where 'Title' is a heading from the xls
-      if field.value == 'Filename':
-         fields['filename'] = i 
-      elif field.value == 'Creator':
-         fields['creator'].append(i)
-      elif field.value == 'Creator 2':
-         fields['creator'].append(i)
-      elif field.value == 'Title':
-         fields['title'].append(i)
-      elif field.value == 'Title/View':
-         fields['title'].append(i)
-      elif field.value == 'Other title':
-         fields['title'].append(i)
-      elif field.value == 'Date':
-         fields['date'].append(i)
-      elif field.value == 'Earliest date':
-         fields['date'].append(i)
-      elif field.value == 'Latest date':
-         fields['date'].append(i)
-      elif field.value == 'Date Photographed':
-         fields['date'].append(i)
-      elif field.value == 'Current Location':
-         fields['coverage'].append(i)
-      elif field.value == 'Discovery location':
-         fields['coverage'].append(i)
-      elif field.value == 'Former location':
-         fields['coverage'].append(i)
-      elif field.value == 'Description of work':
-         fields['description'].append(i)
-      elif field.value == 'Description of view':
-         fields['description'].append(i)
-      elif field.value == 'Inscription':
-         fields['description'].append(i)
-      elif field.value == 'Work Type':
-         fields['type'].append(i)
-      elif field.value == 'Style of work':
-         fields['type'].append(i)
-      elif field.value == 'Resource type':
-         fields['type'].append(i)
-      elif field.value == 'Culture':
-         fields['subject'].append(i)
-      elif field.value == 'Subject of work':
-         fields['subject'].append(i)
-      elif field.value == 'Source':
-         fields['source'].append(i)
-      elif field.value == 'File format':
-         fields['format'].append(i)
-      elif field.value == 'Image size':
-         fields['format'].append(i)
-      elif field.value == 'Permitted uses':
-         fields['rights'].append(i)
-      elif field.value == 'Public/Private':
-         fields['rights'].append(i)
-      elif field.value == 'Collection':
-         fields['relation'].append(i)
-      elif field.value == 'Sub collection':
-         fields['relation'].append(i)
-      elif field.value == 'Record ID':
-         fields['identifier'].append(i)
-      elif field.value == 'Cataloger':
-         fields['contributor'].append(i)
-      elif field.value == 'Copyright Holder':
-         fields['publisher'].append(i)
-      else:
-         pass
 
-    return fields
+""" 
+handles unpacking many archive types from
+the is_archive function
+afile is the location of the archived file
+atype is the type of file from the content_type
+    passed via form
+"""
+def unpack_archive(afile_name, fil):
+    atype = fil.content_type
+    tmp_path = os.path.dirname(afile_name)
+
+    suffix = atype.split("/")    
+    if len(suffix) != 2:
+        return False
+    
+    if suffix[1] == 'zip':  
+        af = zipfile.ZipFile(afile_name, "r")
+    elif suffix[1] == 'x-tar':
+        af = tarfile.open(afile_name, "r")
+    elif suffix[1] == 'x-gzip':
+        af = tarfile.open(afile_name, "r:gz")
+    elif suffix[1] == 'x-bzip2':
+        af = tarfile.open(afile_name, "r:bz2")
+    else:
+        print "no match for archive: %s" % suffix[1]
+        return False
+
+    # Sanitize - ensure no absolute paths or '../' 
+    if suffix[1] == 'zip':
+        for name in af.namelist():
+            if os.path.isabs(name) or re.match('^\.\.', name):
+                print "file no good: %s" % name
+                return False
+    # Sanitize for all non zip archives
+    else:
+        for f in af:
+            if os.path.isabs(f.name) or re.match('^\.\.', f.name):
+                print "file no good: %s" % f.name
+                return False
+    print "extracting archive: %s" % tmp_path
+    af.extractall(tmp_path)
+    af.close()
 
 
 """
@@ -259,20 +257,52 @@ def upload_batch(request):
         uploaddir = mkdtemp()
         ss = handle_file_upload(uploaddir, spreadsheet) 
 
-        # loop over spreadsheet and create metadata
-        # dictionary
+        # get spreadsheet meta data  
         metadict = get_meta_dict(ss)
 
         # unpack the archive file, 
+        handle_file_upload(uploaddir, archive) 
         aname = os.path.join(uploaddir, archive.name)
         unpack_archive(aname, archive)
 
         # create identifier for each object
         # upload object individually and assign
         # -------  loop over the metadata dict and find file name
-        # -------  and then upload that file that I unpacked and associate
-        # -------  that row of meta data
-        # the metadata dictionary to object 
+        errors = []
+        for key,val in metadict.iteritems():
+            fp = os.path.dirname(aname) + "/" + key
+            # move the file from the zip into new tmp directory
+            t = mkdtemp()
+            shutil.move(fp, t) 
+            newf = t + "/" + key
+            print "file:%s" % newf
+            try:
+                open(newf, "r")
+                print "%s found" % newf 
+                ark = identity.mint_new()
+                repopath = storage.ingest_directory(ark, t)
+                identity.bind(ark, repopath, 'dmc186')
+
+                assertions = []
+                # loop over metadata to store
+                for i, v in enumerate(val):
+                    #print "\t%s" % v
+                    for vals in metadict[key][v]:
+                        #print "\t\t%s" % vals
+                        assertion = (ark, ("dc", "http://purl.org/dc/elements/1.1/", v), vals) 
+                        assertions.append(assertion)
+                annotate.add(ark, assertions)
+                shutil.rmtree(t)
+            except IOError as (errno, strerror):
+                print "I/O error({0}): {1}".format(errno, strerror)
+                print "%s" % newf 
+                pass
+            except:
+                print "Unexpected error:", sys.exc_info()[0]
+                print "%s" % newf 
+                raise
+    return HttpResponseRedirect('/pilot/list')
+
 
  
 
@@ -290,7 +320,7 @@ def upload_object(request):
         print "dir:%s" % uploaddir
 
         # loop over the files to upload
-        for i in range(int(request.POST.get('upload_count'))):
+        for i in range(int(request.POST.get('upload_count', 1))):
             f = request.FILES['file_'+str(i+1)]
             cb_key = 'unzip_cb_' + str(i+1)
             # if user does not want to unpack or just regular file upload

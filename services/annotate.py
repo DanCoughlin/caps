@@ -92,10 +92,10 @@ def query(q):
 
 @contextmanager
 def open_rdfstore(configString="/var/data/rdfstore.bdb", identifier=""):
+    store = rdflib.plugin.get('Sleepycat', rdflib.store.Store)('rdfstore')
+    graph = rdflib.ConjunctiveGraph(store='Sleepycat',
+                                    identifier=identifier)
     try:
-        store = rdflib.plugin.get('Sleepycat', rdflib.store.Store)('rdfstore')
-        graph = rdflib.ConjunctiveGraph(store='Sleepycat',
-                                        identifier=identifier)
         rt = graph.open(configString, create=False)
         assert rt != rdflib.store.NO_STORE, "RDFstore is empty"
         assert rt == rdflib.store.VALID_STORE

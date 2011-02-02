@@ -9,13 +9,16 @@
 #   -Removes the rdf storage 
 #   -Removes the actual files 
 #   -Empties the database
+#   -Empties tmp dir
 #   THIS IS NOT REVERSIBLE
 #
 
 RDF_CACHE=/var/www/django/caps/rdfstore/*
 RDF_STORE=/var/data/rdfstore.bdb/*
 PAIR_STORE=/dlt/caps/datastore/stewardship/pairtree_root/*
+TMP_FILES=/tmp/tmp*
 rm -rf $RDF_CACHE
 rm -rf $RDF_STORE
 rm -rf $PAIR_STORE
+rm -rf $TMP_FILES
 python ../manage.py reset pilot --noinput
