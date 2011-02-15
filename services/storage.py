@@ -109,16 +109,15 @@ def list_versions(identifier, f=None):
     return _list_versions(repo, f)
 
 def _list_versions(repo, f=None):
-    if f:
-        log_entries = repo.git.log("--pretty=oneline", f).split("\n")
-    else:
-        log_entries = repo.git.log("--pretty=oneline").split("\n")
+    #if f:
+    #    log_entries = repo.git.log("--pretty=oneline", f).split("\n")
+    #else:
+    #    log_entries = repo.git.log("--pretty=oneline").split("\n")
     versions = []
-    for entry in log_entries:
-        split = entry.split()
-        commit = split[0]
-        message = u' '.join(split[1:])
-        versions.append({commit: message})
+    for commit in repo.head.commit.iter_items(repo=repo,
+                                              rev='master',
+                                              paths=f):
+        versions.append((commit.hexsha, commit.message))
     return versions
 
 def remove_versioned_file(repo, f, message=''):

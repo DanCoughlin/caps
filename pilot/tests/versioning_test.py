@@ -138,17 +138,17 @@ class VersioningTest(TestCase):
         i = storage.stage_file(repo, f)
         c3 = storage.commit_version(i, "third")
         versions = storage._list_versions(repo)
-        # returns a list. each item is a dict representing a commit,
-        #   with the key = commit id and the value = commit message
+        # returns a list. each item is a tuple representing a commit,
+        #   with [0] = commit id and [1] = commit message
         latest_version = versions.pop(0)
-        self.assertEqual(latest_version.keys()[0], c3.hexsha)
-        self.assertEqual(latest_version.values()[0], c3.message)
+        self.assertEqual(latest_version[0], c3.hexsha)
+        self.assertEqual(latest_version[1], c3.message)
         latest_version = versions.pop(0)
-        self.assertEqual(latest_version.keys()[0], c2.hexsha)
-        self.assertEqual(latest_version.values()[0], c2.message)
+        self.assertEqual(latest_version[0], c2.hexsha)
+        self.assertEqual(latest_version[1], c2.message)
         latest_version = versions.pop(0)
-        self.assertEqual(latest_version.keys()[0], c1.hexsha)
-        self.assertEqual(latest_version.values()[0], c1.message)
+        self.assertEqual(latest_version[0], c1.hexsha)
+        self.assertEqual(latest_version[1], c1.message)
 
     def test_list_versions_file(self):
         #List versions of a file (log)
@@ -177,22 +177,22 @@ class VersioningTest(TestCase):
         c5 = storage.commit_version(i, "fourth for f2")        
         f1versions = storage._list_versions(repo, f1)
         f2versions = storage._list_versions(repo, f2)
-        # returns a list. each item is a dict representing a commit,
-        #   with the key = commit id and the value = commit message
+        # returns a list. each item is a tuple representing a commit,
+        #   with [0] = commit id and [1] = commit message
         self.assertEqual(len(f1versions), 3)
         self.assertEqual(len(f2versions), 4)
         latest_f1version = f1versions.pop(0)
-        self.assertEqual(latest_f1version.keys()[0], c4.hexsha)
-        self.assertEqual(latest_f1version.values()[0], c4.message)
+        self.assertEqual(latest_f1version[0], c4.hexsha)
+        self.assertEqual(latest_f1version[1], c4.message)
         latest_f2version = f2versions.pop(0)
-        self.assertEqual(latest_f2version.keys()[0], c5.hexsha)
-        self.assertEqual(latest_f2version.values()[0], c5.message)
+        self.assertEqual(latest_f2version[0], c5.hexsha)
+        self.assertEqual(latest_f2version[1], c5.message)
         earliest_f1version = f1versions.pop()
-        self.assertEqual(earliest_f1version.keys()[0], c1.hexsha)
-        self.assertEqual(earliest_f1version.values()[0], c1.message)
+        self.assertEqual(earliest_f1version[0], c1.hexsha)
+        self.assertEqual(earliest_f1version[1], c1.message)
         earliest_f2version = f2versions.pop()
-        self.assertEqual(earliest_f2version.keys()[0], c1.hexsha)
-        self.assertEqual(earliest_f2version.values()[0], c1.message)
+        self.assertEqual(earliest_f2version[0], c1.hexsha)
+        self.assertEqual(earliest_f2version[1], c1.message)
 
     def test_restore_version_by_number(self):
         #Restore a version by name/number (checkout)
@@ -223,13 +223,13 @@ class VersioningTest(TestCase):
         f2versions = storage._list_versions(repo, f2)
         self.assertEqual(open(f1).read().strip(), "12")
         self.assertEqual(open(f2).read().strip(), "123")
-        third_commit_id = f2versions[1].keys()[0]
+        third_commit_id = f2versions[1][0]
         storage.checkout_file(repo, f2, third_commit_id)
         i = storage.stage_file(repo, f2)
         c6 = storage.commit_version(i, "revert to third")
         self.assertEqual(open(f1).read().strip(), "12")
         self.assertEqual(open(f2).read().strip(), "12")
-        first_commit_id = f2versions[-1].keys()[0]
+        first_commit_id = f2versions[-1][0]
         storage.checkout_file(repo, f2, first_commit_id)
         i = storage.stage_file(repo, f2)
         c7 = storage.commit_version(i, "revert to first")
