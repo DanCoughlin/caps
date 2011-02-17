@@ -4,9 +4,11 @@ CAPS (Curation Architecture Prototype Service) is a Django app for lightweight c
 
 h2. Dependencies
 
-* Django
-* gitdb
-* gitpython
-* pairtree
-* arkpy
-* bagit
+* python (2.6.6)
+* django (1.2.3)
+* gitdb (0.5.2)
+* gitpython (0.3.1)
+* xlrd (0.7.1)
+* pairtree (0.7.4) - http://github.com/mjgiarlo/pairtree
+* arkpy (0.2) - http://github.com/mjgiarlo/arkpy
+* bagit (0.8) - http://github.com/edsu/bagit
