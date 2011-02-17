@@ -9,7 +9,8 @@ urlpatterns = patterns('',
     # (r'^caps/', include('caps.foo.urls')),
     (r'^pilot/(?P<type>(object|batch))/new', 'caps.pilot.views.new_object'),
     (r'^pilot/(?P<display>(list|icons))', 'caps.pilot.views.default'),
-    (r'^pilot/ark:/(?P<arkid>(.*))$', 'caps.pilot.views.management'),
+    #(r'^pilot/(?P<arkid>(.*))$', 'caps.pilot.views.management'),
+    (r'^pilot/(?P<arkid>ark:(.)*)$', 'caps.pilot.views.management'),
     
     #/pilot/upload_progress/?X-Progress-ID=0a8ee3eb055b6f043ed48c8208c9c623
     (r'^pilot/upload_progress/$', 'caps.pilot.views.upload_progress'),

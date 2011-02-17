@@ -1,7 +1,9 @@
 import rdflib
 import StringIO
+import os
 from contextlib import contextmanager
 from caps.services import storage, identity
+from caps.pilot.models import RDFMask
 
 
 class Annotation(object):
@@ -32,32 +34,41 @@ def add(identifier, annotation):
     if not identity.exists(identifier):
         return False
 
+    annotations = storage.get_or_create_file(identifier, "about.nt")
     # get_or_create annotations file from storage
     #   hardcode this filename to about.ttl?
-    annotations = storage.get_or_create_file(identifier, "about.n3")
-
-    # instantiate a graph
-    g = rdflib.ConjunctiveGraph()
-
-    if annotations:
-        # pull existing annotations into in-memory rdf graph
-        g.parse(StringIO.StringIO(annotations), format="n3")
-
-    # assume client sends list of strings/tuples (KLUDGE)
+# block out b.c. RDF lib was to sloooow
+#    #annotations = storage.get_or_create_file(identifier, "about.n3")
+#
+#    # instantiate a graph
+#    g = rdflib.ConjunctiveGraph()
+#
+#    if annotations:
+#        # pull existing annotations into in-memory rdf graph
+#        g.parse(StringIO.StringIO(annotations), format="n3")
+#
+#    # assume client sends list of strings/tuples (KLUDGE)
+#    for assertion in annotation:
+#        ns = rdflib.Namespace(assertion[1][1])
+#        ns_label = assertion[1][0]
+#        triple = (rdflib.URIRef(assertion[0]),
+#                  ns[assertion[1][2]],
+#                  rdflib.Literal(assertion[2]))
+#
+#        # attach annotation to annotations file
+#        g.bind(ns_label, ns)
+#        g.add(triple)
+#
+#        # write annotation to central datastore
+#        #   push this off till future iteration
+#        __rdfstore_write(triple, ns_label, ns)
+# temp filx until we get rdf store working better
+    if not annotations: 
+        annotations = ""
     for assertion in annotation:
-        ns = rdflib.Namespace(assertion[1][1])
-        ns_label = assertion[1][0]
-        triple = (rdflib.URIRef(assertion[0]),
-                  ns[assertion[1][2]],
-                  rdflib.Literal(assertion[2]))
-
-        # attach annotation to annotations file
-        g.bind(ns_label, ns)
-        g.add(triple)
-
-        # write annotation to central datastore
-        #   push this off till future iteration
-        __rdfstore_write(triple, ns_label, ns)
+        trip = '<%s> <%s> "%s" .\n' % (assertion[0], assertion[1], assertion[2])
+        RDFMask().create_mask(assertion[0], os.path.basename(assertion[1]), assertion[2])
+        annotations += trip
 
     # validate annotations (don't write garbage)
     #   maybe rdflib is doing this for us in g.parse & g.add?
@@ -65,7 +76,8 @@ def add(identifier, annotation):
 
     # write annotations file using storage service
     #   this should ask storage to up the repo version
-    storage.put_file(identifier, "about.n3", g.serialize(format="n3"))
+    # storage.put_file(identifier, "about.n3", g.serialize(format="n3"))
+    storage.put_file(identifier, "about.nt", annotations) 
 
     return True
 

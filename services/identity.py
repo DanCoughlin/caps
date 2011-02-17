@@ -2,7 +2,7 @@ import os
 import re
 import datetime
 import arkpy
-from pilot.models import Philes
+from pilot.models import Philes, AuditLog
 #from tasks import identify as identify_task
 
 def mint():
@@ -30,9 +30,11 @@ def exists(id):
 def lookup(id):
     return Philes().get_phile(id) 
        
-def bind(id, full_path, uid, check_sum=''):
-    p = Philes(identifier=id, path=full_path, owner=uid, date_updated=datetime.datetime.now() ) 
+def bind(id, full_path, uid, obj_sz, obj_num=1 ):
+    p = Philes(identifier=id, path=full_path, owner=uid, date_updated=datetime.datetime.now(), sz=obj_sz, num=obj_num ) 
+
     p.save()
+    AuditLog().logit(p, "binding ark and object")
 
 def remove_scheme(id):
     try:

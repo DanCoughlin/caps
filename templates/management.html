@@ -37,7 +37,8 @@ $(document).ready(function() {
 <h4>Currently Viewing: Meeting Minutes</h4>
 <p>
 <span class="detail">&rsaquo;&rsaquo;</span>Id: {{arkid}}<br />
-<span class="detail">&rsaquo;&rsaquo;</span>Type: folder<br />
+<span class="detail">&rsaquo;&rsaquo;</span>Size: {{phile.sz}} bytes<br />
+<span class="detail">&rsaquo;&rsaquo;</span>Files: {{phile.num}}<br />
 <span class="detail">&rsaquo;&rsaquo;</span>Last Audit: 04-May-2009 (out of date - run audit below)<br />
 <span class="detail">&rsaquo;&rsaquo;</span>Current Version: <select> <option value="">1</option> <option value="">2</option> <option value="">3</option> <option value="">4</option> <option value="" selected="true">5</option> </select>
 </p>
@@ -84,6 +85,9 @@ $(document).ready(function() {
 </div>
 -->
 <p>
+{% for f in files %}
+{{f}}<br />
+{% endfor %}
 <span class="detail">&rsaquo;&rsaquo;</span>May-2010.txt<br />
 <span class="detail">&rsaquo;&rsaquo;</span>June-2010.txt<br />
 <span class="detail">&rsaquo;&rsaquo;</span>July-2010.txt<br />
@@ -95,14 +99,9 @@ $(document).ready(function() {
 
 <h4>Metadata:</h4>
 <p>
-<span class="detail">&rsaquo;&rsaquo;</span>contributor: Mairéad Martin, Michael Giarlo<br />
-<span class="detail">&rsaquo;&rsaquo;</span>creator: Dan Coughlin <br />
-<span class="detail">&rsaquo;&rsaquo;</span>date: March 14, 2010 <br />
-<span class="detail">&rsaquo;&rsaquo;</span>description: This is a listing of meeting minutes by year. <br /> 
-<span class="detail">&rsaquo;&rsaquo;</span>format: txt, pdf, jpg <br />
-<span class="detail">&rsaquo;&rsaquo;</span>language: UTF-8 <br />
-<span class="detail">&rsaquo;&rsaquo;</span>rights: creative commons <br />
-<span class="detail">&rsaquo;&rsaquo;</span>source: University Library <br />
+{% for m in md %}
+<span class="detail">&rsaquo;&rsaquo;</span>{{m.tuple_predicate}}: {{m.tuple_object}}<br />
+{% endfor %}
 </p>
 
 

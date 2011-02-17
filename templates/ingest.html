@@ -385,15 +385,15 @@ additional files or metadata click the corresponding button.
 
 {% else %}
 
-<div id="ff_{{forloop.counter}}"> 
+<div id="ff_1"> 
 
 <label class="reg">File:</label> 
-<input type="file" id="file_{{forloop.counter}}" name="file_{{forloop.counter}}" onchange="checkFileType(this); displayBaseName(this);" size="50"/> 
-<span id="base_name_{{forloop.counter}}"></span>
-<p id="error_ff_{{forloop.counter}}" class="note hidden">
+<input type="file" id="file_1" name="file_1" onchange="checkFileType(this); displayBaseName(this);" size="50"/> 
+<span id="base_name_1"></span>
+<p id="error_ff_1" class="note hidden">
 By default, this file will be unzipped and the contents stored individually. 
 Check the box if you would like to store the zip file as one file. 
-<input type="checkbox" id="unzip_cb_{{forloop.counter}}" name="unzip_cb_{{forloop.counter}}" value="1" />Zip Contents
+<input type="checkbox" id="unzip_cb_1" name="unzip_cb_1" value="1" />Zip Contents
 </p>
 
 </div>
@@ -414,6 +414,7 @@ Metadata will be assigned to all files.
 <div id="md_1">
 <label class="reg">Metadata:</label> 
 <select name="meta_type_1" id="meta_type_1" size="1">
+    <option value="">Select Metatdata Type</option>
 {% for m in meta %} 
     <option value="{{m}}">{{m}}</option>
 {% endfor %}

@@ -54,7 +54,7 @@ View: <a href="/pilot/icons">Icons</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="/pilot/l
     <tr>
 {% for o in objects %}
         <td>
-<a href="/pilot/ark:/{{o.arkid}}">
+<a href="/pilot/{{o.arkid}}">
 {% if o.filetype == 'pdf' %}
    <img src="/site_media/img/icons/pdf.png" alt="" width="53" height="53" title="" border="" />
 {% else %} {%if o.filetype == 'image/jpg' %}
@@ -73,7 +73,7 @@ View: <a href="/pilot/icons">Icons</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="/pilot/l
             <b>Id:</b> {{ o.arkid }}<br />
             <b>Last Updated:</b> {{ o.version_date }}<br />
         </td>
-    {% if forloop.counter == 3 or forloop.counter == 6 or forloop.counter == 9 or forloop.counter == 12 %}
+    {% if forloop.counter|divisibleby:3 %} <!-- or forloop.counter == 6 or forloop.counter == 9 or forloop.counter == 12  -->
         </tr>
         <tr>
             <td colspan="6">&nbsp;</td>
@@ -94,7 +94,7 @@ View: <a href="/pilot/icons">Icons</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="/pilot/l
     </tr>
     {% for o in objects %}
     <tr class="{% cycle 'row1' 'row2' %}">
-        <td><a href="/pilot/ark:/{{o.arkid}}">{{o.name}}</a></td>
+        <td><a href="/pilot/{{o.arkid}}">{{o.name}}</a></td>
         <td>{{o.arkid}}</td>
         <td>{{o.filetype}}</td>
         <td>{{o.version}}</td>

@@ -111,6 +111,23 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
 )
 
+METADATA_URLS = dict( 
+    title="http://purl.org/dc/elements/1.1/title", 
+    creator="http://purl.org/dc/elements/1.1/creator",
+    date="http://purl.org/dc/elements/1.1/date",
+    coverage="http://purl.org/dc/elements/1.1/coverage",
+    description="http://purl.org/dc/elements/1.1/description",
+    type="http://purl.org/dc/elements/1.1/type",
+    subject="http://purl.org/dc/elements/1.1/subject",
+    source="http://purl.org/dc/elements/1.1/source",
+    format="http://purl.org/dc/elements/1.1/format" ,
+    rights="http://purl.org/dc/elements/1.1/rights" ,
+    collection="http://purl.org/dc/terms/isPartOf",
+    identifier="http://purl.org/dc/elements/1.1/identifier",
+    contributor="http://purl.org/dc/elements/1.1/contributor",
+    publisher="http://purl.org/dc/elements/1.1/publisher"
+)
+
 try:
     from local_settings import *
 except ImportError:

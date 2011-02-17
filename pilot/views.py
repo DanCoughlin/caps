@@ -9,8 +9,9 @@ import string
 import xlrd
 import shutil
 import sys
+import settings
 from services import identity, storage, annotate 
-from models import Philes
+from models import Philes, RDFMask
 from tempfile import mkdtemp
 from obj import DigitalObject
 from django.conf import settings
@@ -22,16 +23,26 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
+from stat import * 
 
 def default(request, display):
     phils = Philes.objects.filter(owner='dmc186')
     myobj = []
     for p in phils:
-        myobj.append(DigitalObject("title", p.identifier, "type", "1", p.date_updated))
-    #myobj.append(DigitalObject("9780271032689_09_CH04_p113-148.pdf", "42409/9177pv46w", "pdf", "10", "18-Aug-2001"))
-    mylist = annotate.query("SELECT ?title WHERE { ?subj <http://purl.org/dc/elements/1.1/title> ?title }")
-    for tit in mylist:
-        print "title: %s" % tit
+        print "id:%s" % p.identifier
+        metadata = RDFMask.objects.filter(phile=p)
+        #myobj.append(DigitalObject("title", p.identifier, "type", "1", p.date_updated))
+        #myobj.append(DigitalObject("9780271032689_09_CH04_p113-148.pdf", "42409/9177pv46w", "pdf", "10", "18-Aug-2001"))
+        version = 1 
+        title = ""
+        obj_type = ""
+        for md in metadata:
+            #print "%s=>%s" % (md.tuple_predicate, md.tuple_object) 
+            if md.tuple_predicate == "title":
+                title = md.tuple_object
+            if md.tuple_predicate == "type":
+                obj_type = md.tuple_object
+        myobj.append(DigitalObject(title, p.identifier, obj_type, version, p.date_updated))
 
     return render_to_response('index.html', {'objects': myobj, 'display': display})
 
@@ -40,16 +51,16 @@ def get_identifier(request):
     id = identity.mint()
 
     if (identity.validate(id) ):
-        return render_to_response('identifier.html', {'identifier' : id });
+        return render_to_response('identifier.html', {'identifier' : id })
     else:
-        return render_to_response('identifier.html', {'identifier' : "0" });        
+        return render_to_response('identifier.html', {'identifier' : "0" })        
 
 
 def get_fixity(request):
     fil = "/dlt/users/dmc186/dltmap.js"
     algorithm = 'md5'
     h = fixity.generate(fil, algorithm)
-    return render_to_response('fixity.html', {'fixity' : h, 'filename': fil, 'algorithm': algorithm});
+    return render_to_response('fixity.html', {'fixity' : h, 'filename': fil, 'algorithm': algorithm})
 
 
 """
@@ -61,12 +72,12 @@ def new_object(request, type):
     if type == 'object':
         batch = False
         label = 'Upload New Object'
-    meta_values = ['select meta type', 'contributor', 'coverage', 
-        'creator', 'date', 'description', 'format', 'identifier', 
-        'language', 'publisher', 'relation', 'rights', 'source', 
-        'subject', 'title', 'type']
+    #meta_values = ['select meta type', 'contributor', 'coverage', 
+    #    'creator', 'date', 'description', 'format', 'identifier', 
+    #    'language', 'publisher', 'collection', 'rights', 'source', 
+    #    'subject', 'title', 'type']
     
-    return render_to_response('ingest.html', {'meta': meta_values, 'batch': batch, 'label': label});
+    return render_to_response('ingest.html', {'meta': sorted(settings.METADATA_URLS.keys()), 'batch': batch, 'label': label})
 
 
 """
@@ -84,7 +95,7 @@ def get_meta_dict(spreadsheet):
     # the reason for this dict and for loop is to make order of headings not matter
     fields = dict(filename='', title=[], creator=[], date=[], coverage=[],
                   description=[], type=[], subject=[], source=[],
-                  format=[], rights=[], relation=[], identifier=[],
+                  format=[], rights=[], collection=[], identifier=[],
                   contributor=[], publisher=[])
 
     for i, field in enumerate(headings):
@@ -116,7 +127,7 @@ def get_meta_dict(spreadsheet):
         elif field.value in ('Permitted uses', 'Public/Private',):
             fields['rights'].append(i)
         elif field.value in ('Collection', 'Sub collection',):
-            fields['relation'].append(i)
+            fields['collection'].append(i)
         elif field.value in ('Record ID',):
             fields['identifier'].append(i)
         elif field.value in ('Cataloger',):
@@ -142,9 +153,7 @@ def get_meta_dict(spreadsheet):
             fn = row[fields['filename']].value
             # key for each row is the filename to key on the zip file
             metadata[fn] = {}
-            dcfields = ['title', 'creator', 'date', 'coverage', 'description',
-                'type', 'subject', 'source', 'format', 'rights', 'relation', 
-                'identifier', 'contributor', 'publisher']
+            dcfields = settings.METADATA_URLS.keys()
 
             # loop over the fields and create more dicts of lists                 
             # key is one of the dcfields and the value is a list of that
@@ -197,6 +206,7 @@ atype is the type of file from the content_type
 """
 def unpack_archive(afile_name, fil):
     atype = fil.content_type
+
     tmp_path = os.path.dirname(afile_name)
 
     suffix = atype.split("/")    
@@ -250,7 +260,7 @@ def upload_batch(request):
         # enforce the upload files order/type
         if not is_spreadsheet(spreadsheet) or not is_archive(archive):
             print "one of your files just ain't right"
-            return render_to_response('ingest.html', {'batch': True});
+            return render_to_response('ingest.html', {'batch': True})
 
         # both uploads are valid: process batch upload
         # upload spreadsheet and pass file to get_meta_dict
@@ -273,23 +283,22 @@ def upload_batch(request):
             fp = os.path.dirname(aname) + "/" + key
             # move the file from the zip into new tmp directory
             t = mkdtemp()
+            sz = os.path.getsize(fp)
             shutil.move(fp, t) 
             newf = t + "/" + key
-            print "file:%s" % newf
             try:
-                open(newf, "r")
-                print "%s found" % newf 
+                
                 ark = identity.mint_new()
                 repopath = storage.ingest_directory(ark, t)
-                identity.bind(ark, repopath, 'dmc186')
-
+                identity.bind(ark, repopath, 'dmc186', sz)
                 assertions = []
                 # loop over metadata to store
                 for i, v in enumerate(val):
                     #print "\t%s" % v
                     for vals in metadict[key][v]:
                         #print "\t\t%s" % vals
-                        assertion = (ark, ("dc", "http://purl.org/dc/elements/1.1/", v), vals) 
+                        #assertion = (ark, ("dc", "http://purl.org/dc/elements/1.1/", v), vals) 
+                        assertion = (ark, settings.METADATA_URLS[v], vals) 
                         assertions.append(assertion)
                 annotate.add(ark, assertions)
                 shutil.rmtree(t)
@@ -320,7 +329,9 @@ def upload_object(request):
         print "dir:%s" % uploaddir
 
         # loop over the files to upload
-        for i in range(int(request.POST.get('upload_count', 1))):
+        f_sz = 0
+        f_nm = int(request.POST.get('upload_count', 1))
+        for i in range(f_nm):
             f = request.FILES['file_'+str(i+1)]
             cb_key = 'unzip_cb_' + str(i+1)
             # if user does not want to unpack or just regular file upload
@@ -328,8 +339,9 @@ def upload_object(request):
             print "file:%s" % f 
             print "filetype:%s" % f.content_type
             # unpacking a file for user and uploading that
+            f_sz += f.size
+            print "size:%d" % f_sz
             handle_file_upload(uploaddir, f)
-    
             # archive file and user has selected to have system unpack
             if request.POST.has_key(cb_key) == False and is_archive(f):
                 print "unpack"
@@ -338,24 +350,26 @@ def upload_object(request):
             print "------------\n"
 
         # done uploading the files 
-
-#        repopath = storage.ingest_directory(ark, uploaddir)
-#        identity.bind(ark, repopath, 'dmc186')
+        repopath = storage.ingest_directory(ark, uploaddir)
+        print "num:%d totalsize:%d" % (f_nm, f_sz)
+        identity.bind(ark, repopath, 'dmc186', f_sz, f_nm) 
 #
-#        assertions = []
-#        # loop over metadata to store
-#        for i in range(int(request.POST.get('metadata_count'))):
-#            k = request.POST.get('meta_type_'+str(i+1))
-#            v = request.POST.get('meta_value_'+str(i+1))
+        assertions = []
+        # loop over metadata to store
+        for i in range(int(request.POST.get('metadata_count'))):
+            k = request.POST.get('meta_type_'+str(i+1))
+            v = request.POST.get('meta_value_'+str(i+1))
 #            print "%s %s=>%s" % (ark, k, v)
-#            assertion = (ark, ("dc", "http://purl.org/dc/elements/1.1/", k), v) 
-#            assertions.append(annotation)
-#        annotation.add(ark, assertions)
+            #assertion = (ark, ("dc", "http://purl.org/dc/elements/1.1/", k), v) 
+            #assertions.append(annotation)
+            assertion = (ark, settings.METADATA_URLS[k], v) 
+            assertions.append(assertion)
+        annotate.add(ark, assertions)
        
         # done adding metadata 
         return HttpResponseRedirect('/pilot/list')
 
-    return render_to_response('ingest.html', {'batch': False});
+    return render_to_response('ingest.html', {'batch': False})
 
 # A view to report back on upload progress:
 def upload_progress(request):
@@ -386,7 +400,11 @@ def upload_progress(request):
 return screen to view object management
 """
 def management(request, arkid):
-    return render_to_response('management.html', {'arkid': arkid})
+    p = Philes().get_phile(arkid)
+    md = RDFMask().get_md(p)
+    path = p.path + "/data"
+    walker = os.walk(path)
+    return render_to_response('management.html', {'arkid': arkid, 'phile' : p, 'md' : md, 'files' : walker})
 
 
 """
@@ -394,4 +412,4 @@ display screen shots for stake holders
 to provide feedback
 """
 def screenshots(request):
-    return render_to_response('screenshots.html');
+    return render_to_response('screenshots.html')
