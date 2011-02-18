@@ -39,8 +39,12 @@ $(document).ready(function() {
 <span class="detail">&rsaquo;&rsaquo;</span>Id: {{arkid}}<br />
 <span class="detail">&rsaquo;&rsaquo;</span>Size: {{phile.sz}} bytes<br />
 <span class="detail">&rsaquo;&rsaquo;</span>Files: {{phile.num}}<br />
-<span class="detail">&rsaquo;&rsaquo;</span>Last Audit: 04-May-2009 (out of date - run audit below)<br />
-<span class="detail">&rsaquo;&rsaquo;</span>Current Version: <select> <option value="">1</option> <option value="">2</option> <option value="">3</option> <option value="">4</option> <option value="" selected="true">5</option> </select>
+<span class="detail">&rsaquo;&rsaquo;</span>Last Audit: 
+<!-- 04-May-2009 (out of date - run audit below) --> <br />
+<span class="detail">&rsaquo;&rsaquo;</span>Current Version: 
+<!--
+<select> <option value="">1</option> <option value="">2</option> <option value="">3</option> <option value="">4</option> <option value="" selected="true">5</option> </select>
+-->
 </p>
 
 <h4>Included Files:</h4>
@@ -86,15 +90,8 @@ $(document).ready(function() {
 -->
 <p>
 {% for f in files %}
-{{f}}<br />
+<span class="detail">&rsaquo;&rsaquo;</span>{{f}}<br />
 {% endfor %}
-<span class="detail">&rsaquo;&rsaquo;</span>May-2010.txt<br />
-<span class="detail">&rsaquo;&rsaquo;</span>June-2010.txt<br />
-<span class="detail">&rsaquo;&rsaquo;</span>July-2010.txt<br />
-<span class="detail">&rsaquo;&rsaquo;</span>Aug-2010.txt<br />
-<span class="detail">&rsaquo;&rsaquo;</span>Sept-2010.txt<br />
-<span class="detail">&rsaquo;&rsaquo;</span>ReadMe.pdf<br />
-<span class="detail">&rsaquo;&rsaquo;</span>Logo.jpg<br />
 </p>
 
 <h4>Metadata:</h4>

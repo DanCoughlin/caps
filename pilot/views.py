@@ -403,8 +403,11 @@ def management(request, arkid):
     p = Philes().get_phile(arkid)
     md = RDFMask().get_md(p)
     path = p.path + "/data"
-    walker = os.walk(path)
-    return render_to_response('management.html', {'arkid': arkid, 'phile' : p, 'md' : md, 'files' : walker})
+    #walker = os.walk(path)
+    print path
+    for pth, drs, files in os.walk(path):
+        pass
+    return render_to_response('management.html', {'arkid': arkid, 'phile' : p, 'md' : md, 'files' : files})
 
 
 """
