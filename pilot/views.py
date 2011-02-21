@@ -403,13 +403,20 @@ def management(request, arkid):
     p = Philes().get_phile(arkid)
     md = RDFMask().get_md(p)
     path = p.path + "/data"
-    #walker = os.walk(path)
-    print path
     for pth, drs, files in os.walk(path):
         pass
-    return render_to_response('management.html', {'arkid': arkid, 'phile' : p, 'md' : md, 'files' : files})
+    return render_to_response('management.html', {'arkid': arkid, 'phile' : p, 'md' : md, 'files' : files, 'meta' : sorted(settings.METADATA_URLS.keys()) })
 
 
+"""
+function to update the meta data for an object
+"""
+def meta_update(request):
+    m_id = request.POST.get('meta_id')
+    m_type = request.POST.get('meta_type')
+    m_value = request.POST.get('meta_value')
+    render_to_response('meta.html', {'meta_id': m_id, 'meta_type': m_type, 'meta_value': m_value})
+    
 """
 display screen shots for stake holders
 to provide feedback

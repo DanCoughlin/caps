@@ -26,9 +26,9 @@ class Command(BaseCommand):
                 print "Unable to open one of:\n%s\n%s" % (args[0], args[1])
                 pass
         else: 
-            #spreadsheet = open('/var/www/django/caps/scriptdocs/test-sm.xls', 'r')
-            archive = open('/var/www/django/caps/scriptdocs/Archive-sm.zip', 'r')
-            spreadsheet = '/var/www/django/caps/scriptdocs/test-sm.xls'
+            #spreadsheet = open('/var/www/django/caps/pilot/tests/data/test-sm.xls', 'r')
+            archive = open('/var/www/django/caps/pilot/tests/data/Archive-sm.zip', 'r')
+            spreadsheet = '/var/www/django/caps/pilot/tests/data/test-sm.xls'
         
         uploaddir = mkdtemp()
         

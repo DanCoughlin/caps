@@ -7,6 +7,12 @@
     margin-left: 10px;
     margin-right: 5px;
 }
+.obj_file:hover, .metadata:hover {
+    background: #eee;
+}
+.metadata_edit {
+    display: none;
+}
 {% endblock %}
 
 {% block jsfiles %}
@@ -29,6 +35,42 @@ $(document).ready(function() {
         })
         .jstree({ "plugins" : [ "themes", "html_data" ] });
 });
+
+/*
+ * this function will display a form to edit meta data
+ * or swap with the current metadata values
+ */
+function toggleMeta(mdId) {
+    mde = 'mde_'+mdId;
+    mdv = 'mdv_'+mdId;
+    $('#'+mde).toggle();
+    $('#'+mdv).toggle();
+}
+
+
+/*
+ * this function takes a metadata form
+ * being displayed and updates the corresponding
+ * values via ajax
+ */
+function updateMetaData(f) {
+    var meta_url = '/pilot/meta/update';
+    var mid = f.meta_id.value;
+    var mt = f.meta_type[f.meta_type.selectedIndex].value;
+    var mv = f.meta_value.value;
+    alert(mid + " " + mt + " " + mv);
+
+    return false;
+    $.ajax({
+        url: meta_url,
+        type: "POST",
+        data: ({meta_id : f.meta_id.value, meta_type: mt, meta_value: mv}),
+        dataType: "html",
+        success: function () {
+            alert('success');
+        }
+    });
+}
 {% endblock %}
 
 {% block content %}
@@ -36,15 +78,16 @@ $(document).ready(function() {
 <div style="margin: 0px auto; width: 80%; border: 1px #333366 solid;">
 <h4>Currently Viewing: Meeting Minutes</h4>
 <p>
-<span class="detail">&rsaquo;&rsaquo;</span>Id: {{arkid}}<br />
-<span class="detail">&rsaquo;&rsaquo;</span>Size: {{phile.sz}} bytes<br />
-<span class="detail">&rsaquo;&rsaquo;</span>Files: {{phile.num}}<br />
-<span class="detail">&rsaquo;&rsaquo;</span>Last Audit: 
-<!-- 04-May-2009 (out of date - run audit below) --> <br />
-<span class="detail">&rsaquo;&rsaquo;</span>Current Version: 
+<div><span class="detail">&rsaquo;&rsaquo;</span>Id: {{arkid}}</div>
+<div><span class="detail">&rsaquo;&rsaquo;</span>Size: {{phile.sz}} bytes</div>
+<div><span class="detail">&rsaquo;&rsaquo;</span>Files: {{phile.num}}</div>
+<div><span class="detail">&rsaquo;&rsaquo;</span>Last Audit: 
+<!-- 04-May-2009 (out of date - run audit below) --> </div>
+<div><span class="detail">&rsaquo;&rsaquo;</span>Current Version: 
 <!--
 <select> <option value="">1</option> <option value="">2</option> <option value="">3</option> <option value="">4</option> <option value="" selected="true">5</option> </select>
 -->
+</div>
 </p>
 
 <h4>Included Files:</h4>
@@ -90,14 +133,35 @@ $(document).ready(function() {
 -->
 <p>
 {% for f in files %}
-<span class="detail">&rsaquo;&rsaquo;</span>{{f}}<br />
+<div class="obj_file" id="{{f|escape}}"><span class="detail">&rsaquo;&rsaquo;</span>{{f}} <a href="">Remove</a> | <a href="">Rename</a>{{f|escape}}</div>
 {% endfor %}
 </p>
 
 <h4>Metadata:</h4>
 <p>
 {% for m in md %}
-<span class="detail">&rsaquo;&rsaquo;</span>{{m.tuple_predicate}}: {{m.tuple_object}}<br />
+<div class="metadata_value" id="mdv_{{m.id}}"><span class="detail">&rsaquo;&rsaquo;</span>{{m.tuple_predicate}}: {{m.tuple_object}} 
+<a href="" onclick="toggleMeta('{{m.id}}'); return false;">Edit</a> | <a href="">Remove</a> {{m.id}}</div>
+<!-- form to edit a meta data value -->
+<div class="metadata_edit" id="mde_{{m.id}}">
+<form onsubmit="return updateMetaData(this);">
+<input type="hidden" name="meta_id" id="meta_id" value="{{m.id}}" />
+<select name="meta_type" id="meta_type"> 
+    <option value="">Select Metatdata Type</option>
+    {% for vals in meta %} 
+        {% if vals == m.tuple_predicate %}
+            <option value="{{vals}}" selected="selected">{{vals}}</option>
+        {% else %}
+            <option value="{{vals}}">{{vals}}</option>
+        {% endif %}
+    {% endfor %}
+</select>
+<input type="text" name="meta_value" id="meta_value" size="20" maxlength="" value="{{m.tuple_object}}"/> 
+<input type="submit" value="update" />
+<input type="button" value="cancel" onclick="toggleMeta('{{m.id}}');"/>
+</form>
+</div>
+
 {% endfor %}
 </p>
 

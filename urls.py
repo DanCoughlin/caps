@@ -11,7 +11,7 @@ urlpatterns = patterns('',
     (r'^pilot/(?P<display>(list|icons))', 'caps.pilot.views.default'),
     #(r'^pilot/(?P<arkid>(.*))$', 'caps.pilot.views.management'),
     (r'^pilot/(?P<arkid>ark:(.)*)$', 'caps.pilot.views.management'),
-    
+    (r'^pilot/meta/update$', 'caps.pilot.views.meta_update'), 
     #/pilot/upload_progress/?X-Progress-ID=0a8ee3eb055b6f043ed48c8208c9c623
     (r'^pilot/upload_progress/$', 'caps.pilot.views.upload_progress'),
     (r'^getIdentifier', 'caps.pilot.views.get_identifier'),
@@ -25,5 +25,5 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
-    (r'^site_media/(?P<path>.*)$', 'django.views.static.serve', {'document_root':'/var/www/django/site_media/'}    ),
+    (r'^site_media/(?P<path>.*)$', 'django.views.static.serve', {'document_root':'/var/www/django/caps/site_media/'}    ),
 )
