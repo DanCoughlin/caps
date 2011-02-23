@@ -1,0 +1,51 @@
+h3 { font-size:19px; text-weight: bold; text-transform: capitalize; text-decoration: underline }
+
+
+/************* MODAL DIALOG ******************/
+ /* Z-index of #mask must lower than #boxes .window */  
+ #mask {  
+   position:absolute;  
+   z-index:9000;  
+   background-color:#000;  
+   display:none;  
+ }  
+     
+ #boxes .window {  
+   position:absolute;  
+   width:600px;  
+   height:200px;  
+   display:none;  
+   z-index:9999;  
+   padding:20px;  
+	background: #fff;	
+	overflow: scroll;
+ }  
+   
+   
+ /* Customize your modal window here, you can add background image too */  
+ #boxes #dialog {  
+   width:550px;   
+   height:203px;  
+ } 
+
+ul.fileInfoList {
+	padding: 0;
+	margin: 0;
+	list-style-type: none;
+}
+ul.fileInfoList li:hover {
+	background: #eee;
+}
+
+table.searchResults, table.searchResults tr, table.searchResults tr td {
+	border-collapse: collapse;
+	border: 1px #000 solid;
+	padding: 5px;
+}
+table.searchResults tr:hover {
+	background: #eee;
+}
+#content {
+	margin-left: 25px;
+	margin-top: 25px;
+}
