@@ -11,6 +11,7 @@ Dependencies
 * gitdb (0.5.2)
 * gitpython (0.3.1)
 * xlrd (0.7.1)
-* "pairtree":http://github.com/mjgiarlo/pairtree
-* "arkpy":http://github.com/mjgiarlo/arkpy
-* "bagit":http://github.com/edsu/bagit
+* [pairtree](http://github.com/mjgiarlo/pairtree)
+* [arkpy](http://github.com/mjgiarlo/arkpy)
+* [bagit](http://github.com/edsu/bagit)
+
