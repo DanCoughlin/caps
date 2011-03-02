@@ -11,7 +11,7 @@ import shutil
 import sys
 import settings
 from services import identity, storage, annotate 
-from models import Philes, RDFMask
+from models import Philes, RDFMask, Audit, Log
 from tempfile import mkdtemp
 from obj import DigitalObject
 from django.conf import settings
@@ -27,24 +27,20 @@ from stat import *
 
 def default(request, display):
     phils = Philes.objects.filter(owner='dmc186')
+    stats = Philes().get_stats()
     myobj = []
     for p in phils:
         print "id:%s" % p.identifier
         metadata = RDFMask.objects.filter(phile=p)
-        #myobj.append(DigitalObject("title", p.identifier, "type", "1", p.date_updated))
-        #myobj.append(DigitalObject("9780271032689_09_CH04_p113-148.pdf", "42409/9177pv46w", "pdf", "10", "18-Aug-2001"))
-        version = 1 
-        title = ""
+        version = len(storage.list_versions(p.identifier))
+        title = RDFMask().get_title(p) 
         obj_type = ""
         for md in metadata:
-            #print "%s=>%s" % (md.tuple_predicate, md.tuple_object) 
-            if md.tuple_predicate == "title":
-                title = md.tuple_object
-            if md.tuple_predicate == "type":
-                obj_type = md.tuple_object
+            if md.triple_predicate == "type":
+                obj_type = md.triple_object
         myobj.append(DigitalObject(title, p.identifier, obj_type, version, p.date_updated))
 
-    return render_to_response('index.html', {'objects': myobj, 'display': display})
+    return render_to_response('index.html', {'objects': myobj, 'display': display, 'stats': stats})
 
 
 def get_identifier(request):
@@ -69,6 +65,7 @@ display form to upload a new object or batch upload
 def new_object(request, type):
     batch = True
     label = 'Upload New Batch'
+    stats = Philes().get_stats()
     if type == 'object':
         batch = False
         label = 'Upload New Object'
@@ -77,7 +74,7 @@ def new_object(request, type):
     #    'language', 'publisher', 'collection', 'rights', 'source', 
     #    'subject', 'title', 'type']
     
-    return render_to_response('ingest.html', {'meta': sorted(settings.METADATA_URLS.keys()), 'batch': batch, 'label': label})
+    return render_to_response('ingest.html', {'meta': sorted(settings.METADATA_URLS.keys()), 'batch': batch, 'label': label, 'stats': stats})
 
 
 """
@@ -256,11 +253,12 @@ def upload_batch(request):
     if request.method == 'POST':
         spreadsheet = request.FILES['file_0']
         archive = request.FILES['file_1']
+        stats = Philes().get_stats()
 
         # enforce the upload files order/type
         if not is_spreadsheet(spreadsheet) or not is_archive(archive):
             print "one of your files just ain't right"
-            return render_to_response('ingest.html', {'batch': True})
+            return render_to_response('ingest.html', {'batch': True, 'stats':stats})
 
         # both uploads are valid: process batch upload
         # upload spreadsheet and pass file to get_meta_dict
@@ -291,6 +289,9 @@ def upload_batch(request):
                 ark = identity.mint_new()
                 repopath = storage.ingest_directory(ark, t)
                 identity.bind(ark, repopath, 'dmc186', sz)
+                # can't put this in ingest_directory b.c.
+                # bind hasn't been done yet.  yucky.
+                Log().logark(ark, 'ObjectIngested')
                 assertions = []
                 # loop over metadata to store
                 for i, v in enumerate(val):
@@ -320,6 +321,7 @@ function takes a request from the ingest screen
 and determines what actions to take for upload
 """
 def upload_object(request):
+    stats = Philes().get_stats()
     if request.method == 'POST':
              
         ark = identity.mint_new()
@@ -353,23 +355,31 @@ def upload_object(request):
         repopath = storage.ingest_directory(ark, uploaddir)
         print "num:%d totalsize:%d" % (f_nm, f_sz)
         identity.bind(ark, repopath, 'dmc186', f_sz, f_nm) 
-#
-        assertions = []
-        # loop over metadata to store
-        for i in range(int(request.POST.get('metadata_count'))):
-            k = request.POST.get('meta_type_'+str(i+1))
-            v = request.POST.get('meta_value_'+str(i+1))
-#            print "%s %s=>%s" % (ark, k, v)
-            #assertion = (ark, ("dc", "http://purl.org/dc/elements/1.1/", k), v) 
-            #assertions.append(annotation)
-            assertion = (ark, settings.METADATA_URLS[k], v) 
-            assertions.append(assertion)
-        annotate.add(ark, assertions)
-       
+        # can't be put in storage.ingest_directory because
+        # bind hasn't happened yet - yucky.
+        Log().logark(ark, 'ObjectIngested')
+        add_assertions(request, ark)
+
         # done adding metadata 
         return HttpResponseRedirect('/pilot/list')
 
-    return render_to_response('ingest.html', {'batch': False})
+    return render_to_response('ingest.html', {'batch': False, 'stats': stats})
+
+
+
+def add_assertions(request, ark):
+    assertions = []
+    # loop over metadata to store
+    for i in range(int(request.POST.get('metadata_count'))):
+        k = request.POST.get('meta_type_'+str(i+1))
+        v = request.POST.get('meta_value_'+str(i+1))
+        #assertion = (ark, ("dc", "http://purl.org/dc/elements/1.1/", k), v) 
+        #assertions.append(annotation)
+        assertion = (ark, settings.METADATA_URLS[k], v) 
+        assertions.append(assertion)
+    annotate.add(ark, assertions)
+       
+
 
 # A view to report back on upload progress:
 def upload_progress(request):
@@ -400,13 +410,32 @@ def upload_progress(request):
 return screen to view object management
 """
 def management(request, arkid):
+    stats = Philes().get_stats()
     p = Philes().get_phile(arkid)
     md = RDFMask().get_md(p)
+    last_audit = Audit().get_last_audit(p)
+    title = RDFMask().get_title(p)
+    versions = storage.list_versions(arkid)
     path = p.path + "/data"
     for pth, drs, files in os.walk(path):
         pass
-    return render_to_response('management.html', {'arkid': arkid, 'phile' : p, 'md' : md, 'files' : files, 'meta' : sorted(settings.METADATA_URLS.keys()) })
+    return render_to_response('management.html', {'arkid': arkid, 'phile' : p, 'md' : md, 'files' : files, 'meta' : sorted(settings.METADATA_URLS.keys()), 'versions': versions, 'stats': stats, 'obj_name' : title, 'last_audit': last_audit})
 
+
+"""
+run audit on an object
+"""
+def audit(request, arkid):
+    a = storage.validate_object(arkid)
+    return render_to_response('audit.html', {'audit':a})
+
+
+"""
+get log for an object
+"""
+def get_log(request, arkid):
+    l = Log().get_log(arkid)
+    return render_to_response('log.html', {'logs':l})
 
 """
 function to update the meta data for an object
@@ -415,8 +444,65 @@ def meta_update(request):
     m_id = request.POST.get('meta_id')
     m_type = request.POST.get('meta_type')
     m_value = request.POST.get('meta_value')
-    render_to_response('meta.html', {'meta_id': m_id, 'meta_type': m_type, 'meta_value': m_value})
-    
+    annotate.update(m_id, m_type, m_value);
+
+    triple = RDFMask.objects.get(pk=m_id)
+
+    return render_to_response('meta.html', {'triple': triple} )
+   
+
+"""
+runs search on metadata
+"""
+def search(request, keyword):
+    results = RDFMask().search(keyword)
+    myobj = []
+    id_tracker = ""
+    o = None 
+    print len(myobj)
+    for r in results:
+        
+        if not r.phile.identifier == id_tracker:
+            if not o == None: 
+                myobj.append(o)
+            title = RDFMask().get_title(r.phile)
+            version = len(storage.list_versions(r.phile.identifier))
+            o = DigitalObject(title, r.phile.identifier, "", version, r.phile.date_updated, "", [])
+
+        o.metadata.append( (r.triple_predicate, r.triple_object) ) 
+        id_tracker = r.phile.identifier
+
+    if not o == None:
+        myobj.append(o)
+
+    print len(myobj)
+    print len(myobj[0].metadata)
+    return render_to_response('search.html', {'keyword': keyword, 'obj': myobj})
+
+
+"""
+"""
+def autocomplete(request):
+    term = request.GET.get('term', '') 
+    matches = RDFMask().get_autocomplete(term)    
+    return render_to_response('autocomplete.html', {'matches': matches})
+
+
+"""
+remove a metadata element
+"""
+def remove_metadata(request, metaid):
+    annotate.remove(metaid) 
+    return render_to_response('meta_delete.html', {'id': metaid})
+
+"""
+adds metadata to an existing object
+"""
+def add_metadata(request):
+    ark = request.POST.get('ark') 
+    add_assertions(request, ark)
+    return render_to_response('search.html')
+
 """
 display screen shots for stake holders
 to provide feedback

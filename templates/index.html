@@ -1,34 +1,78 @@
 {% extends "page.html" %}
-{% block jscode %}
-function getIdentifier() {
-    $.ajax({
-        type: "GET",
-        url: "/getIdentifier",
-        data: "t=" + new Date().getTime(),
-        success: showIdentifier 
-    });
-}
-
-function showIdentifier(data) {
-    var json = $.parseJSON(data);
-    $('#identifier').html(json.identifier.value);
-}
-
-
-function getFixity() {
-    $.ajax({
-        type: "GET",
-        url: "/getFixity",
-        data: "t=" + new Date().getTime(),
-        success: showFixity
-    });
-}
-function showFixity(data) {
-    var json = $.parseJSON(data);
-    var fixList = "<ul><li>file: "+json.fixity.filename+"</li><li>hash: " + json.fixity.value + "</li><li>algorithm type: " + json.fixity.algorithm + "</li></ul>";
-    $('#fixity').html(fixList);
-}
+{% block jsfiles %}
+<script src="/site_media/js/jquery-ui.min.js" type="text/javascript" language="javascript"></script>
 {% endblock %}
+{% block jscode %}
+
+$(function() {
+    // assign the autocomplete ui to the keyword 
+    // input for searching metadata
+    $("#keyword").autocomplete({
+        source: "/pilot/autocomplete/",
+        minLength: 2
+    });
+});
+
+
+/*
+ * function goes and gets the matching
+ * meta data for matching keywords
+ */
+function searchMetaData(f) {
+    var search_url = "/pilot/search/" + f.keyword.value
+    $.ajax({
+        type: "GET",
+        url: search_url,
+        dataType: "html",
+        success: displayObjects
+    });
+}
+
+
+/*
+ * this function displays the objects
+ * that have been found via searching 
+ * the metadata
+ */
+function displayObjects(data) {
+    var json = $.parseJSON(data);
+
+    // no search results
+    if( json.search.matches.length == 0 ) {
+        $('#objectListing').html("No search results for: " + json.search.keyword);
+    }
+    // search results existing
+    else {
+        $('#objectListing').html("Search results for: " + json.search.keyword +"<br />");
+        var o = json.search.matches;
+        var str = "";
+        var re = new RegExp("(" + json.search.keyword + ")");
+        str += "<table><tr><th>Name</th><th>ID</th><th>Metadata</th><th>Version</th><th>Last Updated</th></tr>";
+        // loop over unique objects that matched search
+        for (var i=0; i < o.length; i++) {
+            
+            str += "<tr><td><a href=\"/pilot/"+ o[i].ark + "\">"+ o[i].title +"</a></td><td>" + o[i].ark + "</td><td>";
+            // loop over metadata for matched object
+            for (var j=0; j < o[i].metadata.length; j++) {
+                str += o[i].metadata[j].triple_predicate + "=>";
+                if( re.test(o[i].metadata[j].triple_object) ) {
+                    str += o[i].metadata[j].triple_object.replace(re, "<span style=\"color:red\">$1</span>");
+                }
+                str += "<br />";
+            }
+            str += "</td><td>" + o[i].version + "</td><td>"+ o[i].version_date+"</td></tr>";
+        }
+        str += "</table>";
+        //$('#objectListing').append(str);
+        $('#objectListing').html(str);
+    } // close - else there are search results
+}
+
+{% endblock %}
+
+{% block total_objects %}{{stats.num_objects}}{% endblock %}
+{% block total_files %}{{stats.num_files}}{% endblock %}
+{% block total_size %}{{stats.total_size}}{% endblock %}
 
 {% block content %}
 
@@ -48,7 +92,7 @@ View: <a href="/pilot/icons">Icons</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="/pilot/l
 </span>
 </div>
 
-<div>
+<div id="objectListing">
 {% if display == 'icons' %}
 <table width="80%">
     <tr>

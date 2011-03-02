@@ -13,10 +13,15 @@
 .metadata_edit {
     display: none;
 }
+#hide_log_link {
+    display: none;
+}
 {% endblock %}
 
 {% block jsfiles %}
 <script src="/site_media/js/jquery.jstree.js" type="text/javascript" language="javascript"></script>
+<script src="/site_media/js/jquery-ui.min.js" type="text/javascript" language="javascript"></script>
+<script src="/site_media/js/meta.js" type="text/javascript" language="javascript"></script>
 {% endblock %}
 
 
@@ -35,6 +40,65 @@ $(document).ready(function() {
         })
         .jstree({ "plugins" : [ "themes", "html_data" ] });
 });
+
+
+/*
+ * make ajax call to remove a meta data element
+ */
+function removeMeta(mdId) {
+    var u = "/pilot/meta/remove/" + mdId + "/";
+    $.ajax({
+        url: u,
+        type: "GET",
+        dataType: "html",
+        success: removeMetaDisplay
+    });
+}
+
+/*
+ * update display for removed metadata element
+ */
+function removeMetaDisplay(data) {
+    var json = $.parseJSON(data);
+    var id = json.meta.id 
+    $('#mdv_'+id).remove();
+}
+
+
+/* 
+ * make ajax call to add metadata to object
+ */
+ function submitMetaData(f) {
+    meta_url = "/pilot/meta/add/"
+    fields = {
+        ark: f.ark.value,
+        metadata_count: f.metadata_count.value
+    };
+    for (var i=1; i <= f.metadata_count.value; i++) {
+        k = "meta_type_"+i;
+        v = "meta_value_"+i;
+        key = eval("f."+k+"[f."+k+".selectedIndex].value");
+        val = eval("f."+v+".value");
+        fields[k] = key;
+        fields[v] = val;
+    }
+    $.ajax({
+        url: meta_url,
+        type: "POST",
+        data: fields,
+        dataType: "html",
+        success: displayNewMeta
+    });
+}
+
+
+ /*
+  * update display to reflect new metadata
+  */
+function displayNewMeta(data) {
+    var json = $.parseJSON(data);
+}
+
 
 /*
  * this function will display a form to edit meta data
@@ -58,90 +122,161 @@ function updateMetaData(f) {
     var mid = f.meta_id.value;
     var mt = f.meta_type[f.meta_type.selectedIndex].value;
     var mv = f.meta_value.value;
-    alert(mid + " " + mt + " " + mv);
-
-    return false;
+    //alert(mid + " " + mt + " " + mv); 
     $.ajax({
         url: meta_url,
         type: "POST",
-        data: ({meta_id : f.meta_id.value, meta_type: mt, meta_value: mv}),
+        data: ({meta_id : mid, meta_type: mt, meta_value: mv}),
         dataType: "html",
-        success: function () {
-            alert('success');
-        }
+        success: changeMetaDataDisplay
+    });
+    return false;
+}
+
+/*
+ * this function will update the metadata being display
+ * with the new values that were updated in updateMetaData
+ */
+function changeMetaDataDisplay(data) {
+    var json = $.parseJSON(data);
+    var id = json.meta.meta_id;
+    $('#key_'+id).html(json.meta.meta_type);
+    $('#val_'+id).html(json.meta.meta_value);
+    $('#status_'+id).fadeIn(500);
+    $('#status_'+id).html("Updated successfully.")
+    toggleMeta(id);
+    $('#mdv_'+id).effect("highlight", {color: '#ff9900'}, 4000);
+    $('#status_'+id).fadeOut(5000);
+}
+
+/*
+ * function makes ajax call to audit current object
+ */
+ function auditObject(ark) {
+    audit_url = "/pilot/audit/"+ark;
+    $.ajax({
+        url : audit_url,
+        type: "GET",
+        dataType: "html",
+        success: updateAudit
+    });
+
+ }
+
+/*
+ * function displays results of the audit that was run
+ */
+ function updateAudit(data) {
+    var json = $.parseJSON(data);
+    d = json.audit.date_updated;
+    r = json.audit.result;
+    v = json.audit.valid;
+    $('#audit_date').html(d);
+    if (v=="True") {
+        $('#valid').html("Valid");
+    }
+    else {
+        $('#valid').html("Invalid");
+    }
+    $('#result').html(r)
+ }
+
+
+function getObjLog(ark) {
+    log_url = "/pilot/log/"+ark;
+    $.ajax({
+        url: log_url,
+        type: "GET",
+        dataType: "html",
+        success: viewObjLog
     });
 }
+
+function viewObjLog(data) {
+    var json = $.parseJSON(data);
+    var ev_log = json.Logs.log;
+    var str = "<table><tr><th width=\"40%\">Action</th><th width=\"30%\">User</th><th width=\"30%\">Date</th></tr>";
+    for (var i=0; i < ev_log.length; i++) {
+        str += "<tr><td>" + ev_log[i].action + "</td><td>" + ev_log[i].user + "</td><td>" + ev_log[i].date_updated + "</td></tr>";
+    } 
+    $('#log').append(str);
+    $('#hide_log_link').toggle(); 
+    $('#view_log_link').toggle(); 
+}
+
+function hideObjLog() {
+    $('#hide_log_link').toggle(); 
+    $('#view_log_link').toggle(); 
+    $('#log').html('');
+}
+
 {% endblock %}
+
+{% block total_objects %}{{stats.num_objects}}{% endblock %}
+{% block total_files %}{{stats.num_files}}{% endblock %}
+{% block total_size %}{{stats.total_size}}{% endblock %}
+
 
 {% block content %}
 <h2 style="color: #333366; padding: 0; margin-left: 100px; font-size: 1.35em;">Object Management</h2>
 <div style="margin: 0px auto; width: 80%; border: 1px #333366 solid;">
-<h4>Currently Viewing: Meeting Minutes</h4>
+<h4>Currently Viewing: {{obj_name}}</h4>
 <p>
 <div><span class="detail">&rsaquo;&rsaquo;</span>Id: {{arkid}}</div>
 <div><span class="detail">&rsaquo;&rsaquo;</span>Size: {{phile.sz}} bytes</div>
 <div><span class="detail">&rsaquo;&rsaquo;</span>Files: {{phile.num}}</div>
 <div><span class="detail">&rsaquo;&rsaquo;</span>Last Audit: 
-<!-- 04-May-2009 (out of date - run audit below) --> </div>
-<div><span class="detail">&rsaquo;&rsaquo;</span>Current Version: 
-<!--
-<select> <option value="">1</option> <option value="">2</option> <option value="">3</option> <option value="">4</option> <option value="" selected="true">5</option> </select>
--->
+{% if last_audit %}
+<span id="audit_date">{{ last_audit.date_updated }}</span>
+    {% if not last_audit.valid %}
+        <span id="valid">Invalid</span> <span id="result">{{ last_audit.result }}</span>
+    {% else %}
+        <span id="valid">Valid</span> <span id="result"></span>
+    {% endif %}
+{% else %}
+<span id="audit_date">Never Run</span>
+<span id="valid"></span>
+<span id="result"></span>
+{% endif %}
+<div>
+<span class="detail">&rsaquo;&rsaquo;</span><a href="" onclick="auditObject('{{arkid}}'); return false;">Audit Now</a>
 </div>
+<div><span class="detail">&rsaquo;&rsaquo;</span>Versions: 
+<select name="versioning" id="versioning">
+<!-- hex is returned from git and log is the commit log for that version -->
+{% for hex, log, commit_date in versions reversed %}
+    {% if forloop.last %}
+        <option value="{{ forloop.counter }}" selected="selected">{{forloop.counter}} - {{commit_date}}</option>
+    {% else %}
+        <option value="{{ forloop.counter }}">{{forloop.counter}} - {{commit_date}}</option>
+    {% endif %}
+{% endfor %}
+</select>
+</div>
+
+<div><span class="detail">&rsaquo;&rsaquo;</span>Event Log: 
+<a href="" onclick="getObjLog('{{arkid}}'); return false;" id="view_log_link">View</a>
+<a href="" onclick="hideObjLog(); return false;" id="hide_log_link">Hide</a>
+<div id="log"></div>
 </p>
 
 <h4>Included Files:</h4>
-<!--
-<div style="height: 200px;" id="demo1"  class="demo jstree jstree-0 jstree-default"> 
-    <ul>
-        <li class="jstree-closed" id="phtml_1">
-            <ins id="i1" class="jstree-icon">&nbsp;</ins>
-            <a href="#" id="y2010"><ins class="jstree-icon">&nbsp;</ins>2010</a>
-            <ul style="">
-                <li class="jstree-leaf" id="phtml_2"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>January</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>February</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>March</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>April</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>May</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>June</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>July</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>August</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>September</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>October</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>November</a></li>
-                <li class="jstree-last jstree-leaf" id="phtml_3"><ins class="jstree-icon">&nbsp;</ins>
-                <a href="#"><ins class="jstree-icon">&nbsp;</ins>December</a></li>
-            </ul>
-        </li>
-        <li class="jstree-last jstree-leaf" id="phtml_4">
-            <ins class="jstree-icon">&nbsp;</ins>
-            <a href="#" id="y2011"><ins class="jstree-icon">&nbsp;</ins>2011</a>
-        </li>
-    </ul>
-</div>
--->
 <p>
 {% for f in files %}
-<div class="obj_file" id="{{f|escape}}"><span class="detail">&rsaquo;&rsaquo;</span>{{f}} <a href="">Remove</a> | <a href="">Rename</a>{{f|escape}}</div>
+<div class="obj_file" id="{{f|escape}}"><span class="detail">&rsaquo;&rsaquo;</span>{{f}} 
+<a href="">Remove</a> | <a href="">Rename</a></div>
 {% endfor %}
 </p>
 
 <h4>Metadata:</h4>
 <p>
 {% for m in md %}
-<div class="metadata_value" id="mdv_{{m.id}}"><span class="detail">&rsaquo;&rsaquo;</span>{{m.tuple_predicate}}: {{m.tuple_object}} 
-<a href="" onclick="toggleMeta('{{m.id}}'); return false;">Edit</a> | <a href="">Remove</a> {{m.id}}</div>
+<div class="metadata_value" id="mdv_{{m.id}}"><span class="detail">&rsaquo;&rsaquo;</span>
+<span id="key_{{m.id}}">{{m.triple_predicate}}</span>: 
+<span id="val_{{m.id}}">{{m.triple_object}}</span>
+<a href="" onclick="toggleMeta('{{m.id}}'); return false;">Edit</a> | <a href="" onclick="removeMeta('{{m.id}}'); return false;">Remove</a> 
+<span id="status_{{m.id}}"></span>
+</div>
 <!-- form to edit a meta data value -->
 <div class="metadata_edit" id="mde_{{m.id}}">
 <form onsubmit="return updateMetaData(this);">
@@ -149,20 +284,42 @@ function updateMetaData(f) {
 <select name="meta_type" id="meta_type"> 
     <option value="">Select Metatdata Type</option>
     {% for vals in meta %} 
-        {% if vals == m.tuple_predicate %}
+        {% if vals == m.triple_predicate %}
             <option value="{{vals}}" selected="selected">{{vals}}</option>
         {% else %}
             <option value="{{vals}}">{{vals}}</option>
         {% endif %}
     {% endfor %}
 </select>
-<input type="text" name="meta_value" id="meta_value" size="20" maxlength="" value="{{m.tuple_object}}"/> 
+<input type="text" name="meta_value" id="meta_value" size="20" maxlength="" value="{{m.triple_object}}"/> 
 <input type="submit" value="update" />
 <input type="button" value="cancel" onclick="toggleMeta('{{m.id}}');"/>
 </form>
 </div>
 
 {% endfor %}
+</p>
+<!-- ADD MORE METADATA -->
+<h4>Add Metadata:</h4>
+<p>
+<form onsubmit="submitMetaData(this); return false;">
+<input type="hidden" name="ark" id="ark" value="{{arkid}}" />
+<input type="hidden" name="metadata_count" id="metadata_count" value="1" />
+<div id="md_1">
+<label class="reg">Metadata:</label> 
+<select name="meta_type_1" id="meta_type_1" size="1">
+    <option value="">Select Metatdata Type</option>
+{% for m in meta %} 
+    <option value="{{m}}">{{m}}</option>
+{% endfor %}
+</select>
+<input type="text" name="meta_value_1" id="meta_value_1" size="20" maxlength="" />
+</div>
+<div id="addmeta">
+<a href="#" onclick="addMetaInput(); return false;">+Add Metadata</a>
+</div>
+<input type="submit" value="Add Metadata" />
+</form>
 </p>
 
 
@@ -171,7 +328,6 @@ function updateMetaData(f) {
 <span class="detail">&rsaquo;&rsaquo;</span><a href="">Add File</a><br />
 <span class="detail">&rsaquo;&rsaquo;</span><a href="">Remove File</a><br />
 <span class="detail">&rsaquo;&rsaquo;</span><a href="">Replace File</a><br />
-<span class="detail">&rsaquo;&rsaquo;</span><a href="">Audit</a><br />
 <span class="detail">&rsaquo;&rsaquo;</span><a href="">Manage Metadata</a><br />
 </p>
 

@@ -55,14 +55,15 @@
 
 <div class="stats">
 <span style="font-size: 1.25em;font-weight: bold; color:#333366; padding-right: 10px">My Upload Stats:</span>
-<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Objects</b> 15&nbsp;&nbsp;<!-- |&nbsp;&nbsp; -->
-<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Files</b> 278&nbsp;&nbsp;<!-- |&nbsp;&nbsp; -->
-<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Total Size</b> 1.2 GB
-
+<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Objects</b> {% block total_objects %}{% endblock %}&nbsp;&nbsp;<!-- |&nbsp;&nbsp; -->
+<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Files</b> {% block total_files %}{% endblock %}&nbsp;&nbsp;<!-- |&nbsp;&nbsp; -->
+<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Total Size</b> {% block total_size %}{% endblock %} 
+<form onsubmit="searchMetaData(this); return false;" style="padding: 0; margin: 0; display:inline;">
 <span class="search">
-<input type="text" value="search term" onfocus="this.value='';"/>
+<input type="text" name="keyword" id="keyword" value="search term" onfocus="this.value='';"/>
 <input type="submit" value="go" />
 </span>
+</form>
 </div>
 <div id="content">
 {% block content %}{% endblock %}

@@ -1,7 +1,9 @@
+import time
 import pairtree
 import bagit
 import git
 from caps.services import settings, identity
+from pilot.models import Philes, Audit, Log
 #import subprocess
 #from twisted.internet import defer
 #from tasks import store as store_task
@@ -11,6 +13,9 @@ from caps.services import settings, identity
 def create_store(path, uri=settings.URI_BASE):
     return pairtree.PairtreeStorageClient(store_dir=path, uri_base=uri)
 
+"""
+returns a pairtree storage client
+"""
 def get_store(identifier, location=None):
     if location:
         tree_location = location
@@ -45,12 +50,12 @@ def ingest_directory(identifier, source, override_tree_location=None):
     (index, untracked) = stage_all(repo)
     commit_version(index, "initializing repo with: %s" % untracked)
 
+    
     # TODO: get this working
     # characterize the object (not working synchronously
     #   (due to jhove2 subproc?))
     #deferred = characterize(pairobj.location)
     #deferred.addCallback(add_to_version_control, repo)
-
     return pairobj.location
 
 def commit_version(index, message=''):
@@ -60,6 +65,7 @@ def commit_version(index, message=''):
     # you might expect the index to be empty after a commit but there's
     # a bug in gitpython.  doing this manually for now.  have notified
     # the gitpython devs, and patched our installation.
+
     index.update()
     return c
 
@@ -117,7 +123,12 @@ def _list_versions(repo, f=None):
     for commit in repo.head.commit.iter_items(repo=repo,
                                               rev='master',
                                               paths=f):
-        versions.append((commit.hexsha, commit.message))
+        # date examples from docs we can figure out what format 
+        # works best or perhaps make a profile option
+        #commit_date = time.asctime(time.gmtime(commit.committed_date))
+
+        commit_date = time.strftime("%a, %d %b %Y %H:%M", time.gmtime(commit.committed_date))
+        versions.append((commit.hexsha, commit.message, commit_date))
     return versions
 
 def remove_versioned_file(repo, f, message=''):
@@ -160,6 +171,27 @@ def put_file(identifier, f, bytestream):
     (index, untracked) = stage_all(repo)
     commit_version(index, "updated file %s via put_file" % f)
     return None
+
+
+"""
+validates the contents of a directory/bag
+"""
+def validate_object(identifier):
+
+    store = get_store(identifier)
+    obj = pairtree.PairtreeStorageObject(identifier, store)
+    objroot = obj.id_to_dirpath()
+    # run some validate commond on 
+    bag = bagit.Bag(objroot)
+    try:
+        # if true - just log true
+        bag.validate()
+        a = Audit().store_audit(identifier, True)
+    except bagit.BagValidationError, bve: 
+        # if false - log error
+        a = Audit().store_audit(identifier, False, str(bve))
+    return a 
+
 
 
 """

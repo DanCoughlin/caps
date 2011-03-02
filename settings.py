@@ -1,8 +1,5 @@
 # Django settings for caps project.
 
-#import djcelery
-#djcelery.setup_loader()
-
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -11,17 +8,6 @@ ADMINS = (
 )
 
 MANAGERS = ADMINS
-
-#BROKER_HOST = "localhost"
-#BROKER_PORT = 5672
-#BROKER_USER = "capstest"
-#BROKER_PASSWORD = "capstest"
-#BROKER_VHOST = "capstest"
-
-#CELERY_IMPORTS = ("tasks.verify", "tasks.identify", "tasks.store", )
-#CELERY_RESULT_BACKEND = "database"
-#CELERY_RESULT_DBURI = "sqlite:///var/data/celerystore.sqlite"
-#CELERY_DISABLE_RATE_LIMITS = True
 
 DATABASES = {
     'default': {

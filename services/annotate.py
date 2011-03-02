@@ -1,9 +1,10 @@
 import rdflib
 import StringIO
 import os
+import git
 from contextlib import contextmanager
 from caps.services import storage, identity
-from caps.pilot.models import RDFMask
+from caps.pilot.models import RDFMask, Philes
 
 
 class Annotation(object):
@@ -80,6 +81,54 @@ def add(identifier, annotation):
     storage.put_file(identifier, "about.nt", annotations) 
 
     return True
+
+
+"""
+function will update the metadata key/value pair 
+in the database for a given id in the database. 
+Then pull out all the meta data and overwrite 
+the existing triple file. Assuming it is easier to
+overwrite that with new info the pick out the updated
+info - we are only updating one key/value at a time
+"""
+def update(db_id, key, val):
+    # update database
+    mask = RDFMask().update_triple(db_id, key, val) 
+    new_annotation_file(mask.phile)
+
+
+"""
+removes a metadata element and updates the triple 
+file
+"""
+def remove(db_id):
+    #update db
+    r = RDFMask.objects.filter(pk=db_id)
+    p = Philes.objects.filter(identifier=r[0].phile.identifier)
+    RDFMask().remove_mask(db_id)
+    new_annotation_file(p)
+
+
+"""
+creates a new about.nt file for the existing triples in the database
+"""
+def new_annotation_file(p):
+    # create a new set of annotations to store in about.nt
+    trips = RDFMask.objects.filter(phile=p)
+    annotations = ""
+    for t in trips:
+        x = '<%s> <%s> "%s" .\n' % (t.phile.identifier, t.triple_predicate, t.triple_object)
+        annotations += x
+
+    # overwrite existing about.nt with new triples
+    # put_file, will update git
+    storage.put_file(trips[0].phile.identifier, "about.nt", annotations)
+
+    #repo = git.Repo(trips[0].phile.path)
+    #storage.commit_version(repo.index, "updated metadata " + key + "=>" + val)
+    return True
+
+
 
 def query(q):
     """
