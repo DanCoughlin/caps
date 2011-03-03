@@ -236,12 +236,41 @@ class VersioningTest(TestCase):
         self.assertEqual(open(f1).read().strip(), "12")
         self.assertEqual(open(f2).read().strip(), "")
 
-    def test_restore_version_by_date(self):
-        #Restore a version by date (checkout)
-        self.assertTrue(True)
-
     def test_tag_version(self):
         #Name a version (tag)
+        repo = storage.init_version(self.workdir)
+        h, f = tempfile.mkstemp(dir=self.workdir)
+        i, u = storage.stage_all(repo)
+        c1 = storage.commit_version(i, "first commit")
+        with open(f, "a") as fh:
+            fh.write("first\n")
+        i = storage.stage_file(repo, f)
+        c2 = storage.commit_version(i, "second commit", tag="0.1")
+        with open(f, "a") as fh:
+            fh.write("second\n")
+        i = storage.stage_file(repo, f)
+        c3 = storage.commit_version(i, "third commit", tag="0.2")
+        with open(f, "a") as fh:
+            fh.write("third\n")
+        i = storage.stage_file(repo, f)
+        c4 = storage.commit_version(i, "fourth commit")
+        versions = storage._list_versions(repo)
+        # returns a list. each item is a tuple representing a commit,
+        #   with [0] = commit id
+        #        [1] = commit message
+        #        [2] = date
+        #        [3] = tag (OPTIONAL)
+        latest_version = versions.pop(0)
+        third_version = versions.pop(0)
+        second_version = versions.pop(0)
+        first_version = versions.pop()
+        self.assertEqual(latest_version[3], None)
+        self.assertEqual(third_version[3], "0.2")
+        self.assertEqual(second_version[3], "0.1")
+        self.assertEqual(first_version[3], None)
+
+    def test_restore_version_by_date(self):
+        #Restore a version by date (checkout)
         self.assertTrue(True)
 
     def test_view_version_history(self):

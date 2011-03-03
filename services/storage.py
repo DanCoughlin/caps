@@ -58,14 +58,13 @@ def ingest_directory(identifier, source, override_tree_location=None):
     #deferred.addCallback(add_to_version_control, repo)
     return pairobj.location
 
-def commit_version(index, message=''):
-    if not message:
-        message = 'message not specified'
+def commit_version(index, message='message not specified', tag=None):
     c = index.commit(message)
+    if tag and isinstance(tag, str):
+        index.repo.create_tag(path=tag)
     # you might expect the index to be empty after a commit but there's
     # a bug in gitpython.  doing this manually for now.  have notified
     # the gitpython devs, and patched our installation.
-
     index.update()
     return c
 
@@ -126,10 +125,17 @@ def _list_versions(repo, f=None):
         # date examples from docs we can figure out what format 
         # works best or perhaps make a profile option
         #commit_date = time.asctime(time.gmtime(commit.committed_date))
-
         commit_date = time.strftime("%a, %d %b %Y %H:%M", time.gmtime(commit.committed_date))
-        versions.append((commit.hexsha, commit.message, commit_date))
+        tag = _get_tag_by_commit_id(repo, commit.hexsha)
+        versions.append((commit.hexsha, commit.message, commit_date, tag))
     return versions
+
+def _get_tag_by_commit_id(repo, commit_id):
+    """ returns a list of Commit objects """
+    for tag in repo.tags:
+        if tag.object.hexsha == commit_id:
+            return tag.name
+    return None
 
 def remove_versioned_file(repo, f, message=''):
     repo.git.rm(f)
