@@ -1,0 +1,8 @@
+django
+gitdb
+gitpython
+xlrd
+-e git+http://github.com/mjgiarlo/pairtree#egg=pairtree-mjg
+-e git+http://github.com/mjgiarlo/arkpy#egg=arkpy-mjg
+-e git+http://github.com/edsu/bagit#egg=bagit-edsu
+
