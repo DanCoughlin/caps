@@ -1,0 +1,26 @@
+{
+    "search": 
+    {
+        "keyword": "{{keyword}}",
+        "matches": [
+{% for o in obj %}
+        {
+        "ark":"{{o.arkid}}",
+        "title":"{{o.name}}",
+        "version":"{{o.version}}",
+        "version_date":"{{o.version_date}}",
+        "metadata": [
+        {% for md in o.metadata %}
+            {
+            "triple_predicate": "{{md.0}}",
+            "triple_object": "{{md.1}}"
+            }
+            {% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ]
+        }
+        {% if not forloop.last %},{% endif %}
+{% endfor %}
+        ]
+    }
+}

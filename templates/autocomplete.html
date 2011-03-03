@@ -1,0 +1,10 @@
+[
+{% for m in matches %}
+    {
+    "id": "{{m.phile.identifier}}",
+    "label": "{{m.triple_object}}",
+    "value": "{{m.triple_object}}"
+    }
+    {% if not forloop.last %},{% endif %}
+{% endfor %}
+]

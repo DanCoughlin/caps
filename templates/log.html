@@ -1,0 +1,15 @@
+{
+    "Logs": {
+        "id": "{{log.phile.identifier}}",
+        "log":[
+{% for log in logs %}
+            {
+            "action": "{{log.action}}",
+            "user": "{{log.user}}",
+            "date_updated": "{{log.date_updated}}"
+            }
+        {% if not forloop.last %},{% endif %}
+{% endfor %}
+            ]
+    }
+}
