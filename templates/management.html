@@ -1,6 +1,7 @@
 {% extends "page.html" %}
 
 {% block cssinline %}
+<!--
 .detail {
     font-weight: bold; 
     color: #990000;
@@ -16,6 +17,7 @@
 #hide_log_link {
     display: none;
 }
+-->
 {% endblock %}
 
 {% block jsfiles %}
@@ -27,18 +29,16 @@
 
 {% block jscode %}
 $(document).ready(function() {
-    $("#y2010").click(function () { 
-        $("#demo1").jstree("toggle_node","#phtml_1");
-    });
-    $("#i2010").click(function () { 
-        $("#demo1").jstree("toggle_node","#phtml_1");
-    });
+    $("#obj-tabs").tabs();
 
-    $("#demo1")
-        .bind("open_node.jstree close_node.jstree", function (e) {
-            //$("#log1").html("Last operation: " + e.type);
-        })
-        .jstree({ "plugins" : [ "themes", "html_data" ] });
+    $('#filetree').fileTree({
+        root: '{{arkid}}/data',
+        script: '/pilot/filetree/',
+        expandSpeed: 500,
+        multiFolder: false
+       }, function (file) {
+            alert(file);
+    });
 });
 
 
@@ -199,6 +199,8 @@ function viewObjLog(data) {
     for (var i=0; i < ev_log.length; i++) {
         str += "<tr><td>" + ev_log[i].action + "</td><td>" + ev_log[i].user + "</td><td>" + ev_log[i].date_updated + "</td></tr>";
     } 
+    $('#obj-log').html(str);
+    return;
     $('#log').append(str);
     $('#hide_log_link').toggle(); 
     $('#view_log_link').toggle(); 
@@ -212,20 +214,41 @@ function hideObjLog() {
 
 {% endblock %}
 
+{% block nav %}
+    <li><a href="/pilot/list/">Dashboard</a></li>
+    <li><a href="/pilot/object/new/">Ingest Tool</a></li>
+{% endblock %}
+
 {% block total_objects %}{{stats.num_objects}}{% endblock %}
 {% block total_files %}{{stats.num_files}}{% endblock %}
 {% block total_size %}{{stats.total_size}}{% endblock %}
 
 
 {% block content %}
-<h2 style="color: #333366; padding: 0; margin-left: 100px; font-size: 1.35em;">Object Management</h2>
-<div style="margin: 0px auto; width: 80%; border: 1px #333366 solid;">
-<h4>Currently Viewing: {{obj_name}}</h4>
-<p>
-<div><span class="detail">&rsaquo;&rsaquo;</span>Id: {{arkid}}</div>
-<div><span class="detail">&rsaquo;&rsaquo;</span>Size: {{phile.sz}} bytes</div>
-<div><span class="detail">&rsaquo;&rsaquo;</span>Files: {{phile.num}}</div>
-<div><span class="detail">&rsaquo;&rsaquo;</span>Last Audit: 
+<h1>Object Management</h1>
+<a href="/pilot/list/">&laquo; Reurn to Dashboard</a>
+<div id="object">
+    <div class="item">
+        <h2>{{obj_name}}</h2>
+        <img class="icon preview" src="/site_media/img/site_images/icon_folder_128.png" alt="folder" />
+        <div id="obj-tabs"> 
+                <ul class="nav">
+                    <li><a href="#obj-details">Object Details</a></li>
+                    <li><a href="#obj-files">Files</a></li>
+                    <li><a href="#obj-log" onclick="getObjLog('{{arkid}}'); return false;">Log</a></li>
+                </ul>
+                <div id="obj-details">
+                    <table>
+                        <tr>
+                            <td class="left">
+                                <h3>Object Details:</h3>
+                                <a class="audit filelink" href="/" onclick="auditObject('{{arkid}}'); return false;">Audit</a>
+                            </td>
+                            <td>
+                                <strong>ID:</strong> {{arkid}}<br /> 
+                                <strong>Date Ingested:</strong> <br /> 
+                                <strong>Type:</strong> <br /> 
+                                <strong>Last Audit:</strong> 
 {% if last_audit %}
 <span id="audit_date">{{ last_audit.date_updated }}</span>
     {% if not last_audit.valid %}
@@ -238,10 +261,11 @@ function hideObjLog() {
 <span id="valid"></span>
 <span id="result"></span>
 {% endif %}
-<div>
-<span class="detail">&rsaquo;&rsaquo;</span><a href="" onclick="auditObject('{{arkid}}'); return false;">Audit Now</a>
-</div>
-<div><span class="detail">&rsaquo;&rsaquo;</span>Versions: 
+<br />
+
+                                <strong>Object Size:</strong> {{phile.sz}} <br />
+                                <strong># Object Files:</strong> {{phile.num}}<br/>
+                                <strong>Current Version:</strong>
 <select name="versioning" id="versioning">
 <!-- hex is returned from git and log is the commit log for that version -->
 {% for hex, log, commit_date in versions reversed %}
@@ -252,37 +276,48 @@ function hideObjLog() {
     {% endif %}
 {% endfor %}
 </select>
-</div>
-
-<div><span class="detail">&rsaquo;&rsaquo;</span>Event Log: 
-<a href="" onclick="getObjLog('{{arkid}}'); return false;" id="view_log_link">View</a>
-<a href="" onclick="hideObjLog(); return false;" id="hide_log_link">Hide</a>
-<div id="log"></div>
-</p>
-
-<h4>Included Files:</h4>
-<p>
+                            </td>
+                        </tr>
+<!--
+                        <tr>
+                            <td class="left">
+                                <h3>Included Files:</h3>
+{% comment %}
 {% for f in files %}
 <div class="obj_file" id="{{f|escape}}"><span class="detail">&rsaquo;&rsaquo;</span>{{f}} 
 <a href="">Remove</a> | <a href="">Rename</a></div>
 {% endfor %}
-</p>
-
-<h4>Metadata:</h4>
-<p>
+{% endcomment %}
+                                <a class="add filelink" href="/">Add File</a>
+                                <a class="remove filelink" href="/">Remove File</a>
+                                <a class="replace filelink" href="/">Replace File</a>
+                            </td>
+                            <td>
+                            </td>
+                        </tr>
+-->
+                        <tr>
+                            <td class="left">
+                                <h3>Metadata:</h3>
+                                <a class="meta filelink" href="/">Show All Metadata</a>
+                            </td>
+                            <td>
 {% for m in md %}
-<div class="metadata_value" id="mdv_{{m.id}}"><span class="detail">&rsaquo;&rsaquo;</span>
-<span id="key_{{m.id}}">{{m.triple_predicate}}</span>: 
+<span id="mdv_{{m.id}}" class="metadata">
+<a href="/" onclick="toggleMeta('{{m.id}}'); return false;"><img src="/site_media/img/site_images/icon_edit.png" alt="edit" /></a>
+<a href="/" onclick="return false;"><img src="/site_media/img/site_images/icon_duplicate.png" alt="duplicate" /></a>
+<a href="/" onclick="removeMeta('{{m.id}}'); return false;"><img src="/site_media/img/site_images/icon_delete.png" alt="delete" /></a>&nbsp;&nbsp;
+<strong><span id="key_{{m.id}}">{{m.triple_predicate}}</span>:</strong> 
 <span id="val_{{m.id}}">{{m.triple_object}}</span>
-<a href="" onclick="toggleMeta('{{m.id}}'); return false;">Edit</a> | <a href="" onclick="removeMeta('{{m.id}}'); return false;">Remove</a> 
 <span id="status_{{m.id}}"></span>
-</div>
+</span>
+
 <!-- form to edit a meta data value -->
 <div class="metadata_edit" id="mde_{{m.id}}">
 <form onsubmit="return updateMetaData(this);">
 <input type="hidden" name="meta_id" id="meta_id" value="{{m.id}}" />
 <select name="meta_type" id="meta_type"> 
-    <option value="">Select Metatdata Type</option>
+    <option value="">Select Metadata Type</option>
     {% for vals in meta %} 
         {% if vals == m.triple_predicate %}
             <option value="{{vals}}" selected="selected">{{vals}}</option>
@@ -298,8 +333,32 @@ function hideObjLog() {
 </div>
 
 {% endfor %}
+                            </td>
+                        </tr>
+                    </table>
+                </div><!-- /obj-details -->
+                <div id="obj-files">
+                    <a class="add filelink" href="/">Add File</a>
+                    <div id="filetree"></div>
+                </div><!-- /obj-files -->
+                <div id="obj-log">
+                </div><!-- /obj-files -->
+            </div><!-- /obj-tabs -->
+        </div><!-- /item -->
+    </div><!-- /object -->
+
+ 
+    
+<!-- 
+<div><span class="detail">&rsaquo;&rsaquo;</span>Event Log: 
+<a href="" onclick="getObjLog('{{arkid}}'); return false;" id="view_log_link">View</a>
+<a href="" onclick="hideObjLog(); return false;" id="hide_log_link">Hide</a>
+<div id="log"></div>
 </p>
+-->
+
 <!-- ADD MORE METADATA -->
+<!--
 <h4>Add Metadata:</h4>
 <p>
 <form onsubmit="submitMetaData(this); return false;">
@@ -308,7 +367,7 @@ function hideObjLog() {
 <div id="md_1">
 <label class="reg">Metadata:</label> 
 <select name="meta_type_1" id="meta_type_1" size="1">
-    <option value="">Select Metatdata Type</option>
+    <option value="">Select Metadata Type</option>
 {% for m in meta %} 
     <option value="{{m}}">{{m}}</option>
 {% endfor %}
@@ -334,4 +393,5 @@ function hideObjLog() {
 <p>
 </p>
 </div>
+-->
 {% endblock %}

@@ -10,6 +10,9 @@ import xlrd
 import shutil
 import sys
 import settings
+import pairtree
+import magic
+from urllib import unquote
 from services import identity, storage, annotate 
 from models import Philes, RDFMask, Audit, Log
 from tempfile import mkdtemp
@@ -20,27 +23,37 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.forms.models import save_instance
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotAllowed, HttpResponseRedirect
+
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
 from stat import * 
+from django.contrib.auth.decorators import login_required 
 
-def default(request, display):
+@login_required
+def default(request, display='icons'):
     phils = Philes.objects.filter(owner='dmc186')
     stats = Philes().get_stats()
     myobj = []
+    icons ={
+        "compound" : ('icon_folder_48.png', 'folder'),
+        "Image" : ('icon_psd_48.png', 'image file')
+    }
     for p in phils:
         print "id:%s" % p.identifier
         metadata = RDFMask.objects.filter(phile=p)
         version = len(storage.list_versions(p.identifier))
         title = RDFMask().get_title(p) 
-        obj_type = ""
-        for md in metadata:
-            if md.triple_predicate == "type":
-                obj_type = md.triple_object
-        myobj.append(DigitalObject(title, p.identifier, obj_type, version, p.date_updated))
+        obj_type = p.obj_type 
+        myobj.append(DigitalObject(title, p.identifier, obj_type, version, p.date_updated, "icon_folder_48.png", "folder")) 
+        #if obj_type is 'compound':
+        #else: 
+        #    myobj.append(DigitalObject(title, p.identifier, obj_type, version, p.date_updated, icons[obj_type][0], icons[obj_type][1]))
 
-    return render_to_response('index.html', {'objects': myobj, 'display': display, 'stats': stats})
+    if display == 'icons':
+        return render_to_response('icons.html', {'objects': myobj, 'stats': stats})
+    else: 
+        return render_to_response('list.html', {'objects': myobj, 'stats': stats})
 
 
 def get_identifier(request):
@@ -52,29 +65,16 @@ def get_identifier(request):
         return render_to_response('identifier.html', {'identifier' : "0" })        
 
 
-def get_fixity(request):
-    fil = "/dlt/users/dmc186/dltmap.js"
-    algorithm = 'md5'
-    h = fixity.generate(fil, algorithm)
-    return render_to_response('fixity.html', {'fixity' : h, 'filename': fil, 'algorithm': algorithm})
-
-
 """
 display form to upload a new object or batch upload
 """
+@login_required
 def new_object(request, type):
-    batch = True
-    label = 'Upload New Batch'
     stats = Philes().get_stats()
     if type == 'object':
-        batch = False
-        label = 'Upload New Object'
-    #meta_values = ['select meta type', 'contributor', 'coverage', 
-    #    'creator', 'date', 'description', 'format', 'identifier', 
-    #    'language', 'publisher', 'collection', 'rights', 'source', 
-    #    'subject', 'title', 'type']
-    
-    return render_to_response('ingest.html', {'meta': sorted(settings.METADATA_URLS.keys()), 'batch': batch, 'label': label, 'stats': stats})
+        return render_to_response('ingest.html', {'meta': sorted(settings.METADATA_URLS.keys()), 'stats': stats})
+    else:
+        return render_to_response('ingest_batch.html', {'meta': sorted(settings.METADATA_URLS.keys()), 'stats': stats})
 
 
 """
@@ -237,6 +237,15 @@ def unpack_archive(afile_name, fil):
     print "extracting archive: %s" % tmp_path
     af.extractall(tmp_path)
     af.close()
+    # we don't store the actual archived file 
+    print "remove the actual zip file - don't store that:%s" % afile_name
+    os.remove(os.path.join(tmp_path, afile_name))
+
+    # mac adds this __MACOSX directory to archive files, don't add it to the bag 
+    annoying_mac_dir = os.path.join(tmp_path, "__MACOSX")  
+    if os.path.exists(annoying_mac_dir):
+        print "remove that mac zip file, don't archive: %s" % annoying_mac_dir
+        shutil.rmtree(annoying_mac_dir)
 
 
 """
@@ -244,21 +253,22 @@ handles the batch upload format which enforces a spreadsheet of metadata
 in the first file and an archive as the second file upload
 the spreadsheet contains metadata fields, one which will be the 
 file names to associate the row of metadata with the file to uplaod
-        file_0 is metadata spreadsheet
-        file_1 is zip file for uploads
+        file_0 is zip file for uploads
+        file_1 is metadata spreadsheet
         verify - file_0 is valid spreadsheet
         verify - file_1 is valid archive
 """
+@login_required
 def upload_batch(request):
     if request.method == 'POST':
-        spreadsheet = request.FILES['file_0']
-        archive = request.FILES['file_1']
+        archive = request.FILES['file_0']
+        spreadsheet = request.FILES['file_1']
         stats = Philes().get_stats()
 
         # enforce the upload files order/type
         if not is_spreadsheet(spreadsheet) or not is_archive(archive):
             print "one of your files just ain't right"
-            return render_to_response('ingest.html', {'batch': True, 'stats':stats})
+            return render_to_response('ingest_batch.html', {'batch': True, 'stats':stats})
 
         # both uploads are valid: process batch upload
         # upload spreadsheet and pass file to get_meta_dict
@@ -282,13 +292,15 @@ def upload_batch(request):
             # move the file from the zip into new tmp directory
             t = mkdtemp()
             sz = os.path.getsize(fp)
+            mime = magic.Magic(mime=True)
+            o_type = mime.from_file(fp) 
             shutil.move(fp, t) 
             newf = t + "/" + key
             try:
                 
                 ark = identity.mint_new()
                 repopath = storage.ingest_directory(ark, t)
-                identity.bind(ark, repopath, 'dmc186', sz)
+                identity.bind(ark, repopath, 'dmc186', sz, 1, o_type)
                 # can't put this in ingest_directory b.c.
                 # bind hasn't been done yet.  yucky.
                 Log().logark(ark, 'ObjectIngested')
@@ -320,6 +332,7 @@ def upload_batch(request):
 function takes a request from the ingest screen
 and determines what actions to take for upload
 """
+@login_required
 def upload_object(request):
     stats = Philes().get_stats()
     if request.method == 'POST':
@@ -333,6 +346,7 @@ def upload_object(request):
         # loop over the files to upload
         f_sz = 0
         f_nm = int(request.POST.get('upload_count', 1))
+        o_type = ''
         for i in range(f_nm):
             f = request.FILES['file_'+str(i+1)]
             cb_key = 'unzip_cb_' + str(i+1)
@@ -340,6 +354,7 @@ def upload_object(request):
             print "index:%s" % str(i+1)
             print "file:%s" % f 
             print "filetype:%s" % f.content_type
+            o_type = f.content_type
             # unpacking a file for user and uploading that
             f_sz += f.size
             print "size:%d" % f_sz
@@ -349,12 +364,16 @@ def upload_object(request):
                 print "unpack"
                 aname = os.path.join(uploaddir, f.name)
                 unpack_archive(aname, f)
+                o_type = 'compound'
             print "------------\n"
 
         # done uploading the files 
         repopath = storage.ingest_directory(ark, uploaddir)
         print "num:%d totalsize:%d" % (f_nm, f_sz)
-        identity.bind(ark, repopath, 'dmc186', f_sz, f_nm) 
+        if f_nm > 1:
+            o_type = 'compound'
+        identity.bind(ark, repopath, 'dmc186', f_sz, f_nm, o_type) 
+
         # can't be put in storage.ingest_directory because
         # bind hasn't happened yet - yucky.
         Log().logark(ark, 'ObjectIngested')
@@ -366,7 +385,46 @@ def upload_object(request):
     return render_to_response('ingest.html', {'batch': False, 'stats': stats})
 
 
+"""
+remove a metadata element
+"""
+@login_required
+def remove_metadata(request, metaid):
+    annotate.remove(metaid) 
+    return render_to_response('meta_delete.html', {'id': metaid})
 
+
+"""
+adds metadata to an existing object
+"""
+@login_required
+def add_metadata(request):
+    ark = request.POST.get('ark') 
+    add_assertions(request, ark)
+    return render_to_response('search.html')
+
+
+"""
+function to update the meta data for an object
+"""
+@login_required
+def meta_update(request):
+    m_id = request.POST.get('meta_id')
+    m_type = request.POST.get('meta_type')
+    m_value = request.POST.get('meta_value')
+    annotate.update(m_id, m_type, m_value);
+
+    triple = RDFMask.objects.get(pk=m_id)
+
+    return render_to_response('meta.html', {'triple': triple} )
+
+
+"""
+function takes a request object and an arkid
+and creates a new list of assertions/annotations
+for that arkid object
+"""
+@login_required
 def add_assertions(request, ark):
     assertions = []
     # loop over metadata to store
@@ -380,8 +438,8 @@ def add_assertions(request, ark):
     annotate.add(ark, assertions)
        
 
-
 # A view to report back on upload progress:
+@login_required
 def upload_progress(request):
     print "even called?"
     """
@@ -409,6 +467,7 @@ def upload_progress(request):
 """
 return screen to view object management
 """
+@login_required
 def management(request, arkid):
     stats = Philes().get_stats()
     p = Philes().get_phile(arkid)
@@ -425,6 +484,7 @@ def management(request, arkid):
 """
 run audit on an object
 """
+@login_required
 def audit(request, arkid):
     a = storage.validate_object(arkid)
     return render_to_response('audit.html', {'audit':a})
@@ -433,27 +493,17 @@ def audit(request, arkid):
 """
 get log for an object
 """
+@login_required
 def get_log(request, arkid):
     l = Log().get_log(arkid)
     return render_to_response('log.html', {'logs':l})
 
-"""
-function to update the meta data for an object
-"""
-def meta_update(request):
-    m_id = request.POST.get('meta_id')
-    m_type = request.POST.get('meta_type')
-    m_value = request.POST.get('meta_value')
-    annotate.update(m_id, m_type, m_value);
-
-    triple = RDFMask.objects.get(pk=m_id)
-
-    return render_to_response('meta.html', {'triple': triple} )
    
 
 """
 runs search on metadata
 """
+@login_required
 def search(request, keyword):
     results = RDFMask().search(keyword)
     myobj = []
@@ -475,13 +525,13 @@ def search(request, keyword):
     if not o == None:
         myobj.append(o)
 
-    print len(myobj)
-    print len(myobj[0].metadata)
     return render_to_response('search.html', {'keyword': keyword, 'obj': myobj})
 
 
 """
+returns listing of matching metadata values for search autocomplete
 """
+@login_required
 def autocomplete(request):
     term = request.GET.get('term', '') 
     matches = RDFMask().get_autocomplete(term)    
@@ -489,23 +539,36 @@ def autocomplete(request):
 
 
 """
-remove a metadata element
 """
-def remove_metadata(request, metaid):
-    annotate.remove(metaid) 
-    return render_to_response('meta_delete.html', {'id': metaid})
+@login_required
+def filetree(request):
+    dir_id = request.POST.get("dir")
+    dir_id = unquote(dir_id)
+   
+    # get the ark as everything leading up to /data
+    a = dir_id.split("/data")
+    ark = a[0]
 
-"""
-adds metadata to an existing object
-"""
-def add_metadata(request):
-    ark = request.POST.get('ark') 
-    add_assertions(request, ark)
-    return render_to_response('search.html')
+    # payload dir is everything passed in dir beyond data
+    payload = "/data/" + ''.join(a[1:]) 
+    payload = os.path.normpath(payload)
 
-"""
-display screen shots for stake holders
-to provide feedback
-"""
-def screenshots(request):
-    return render_to_response('screenshots.html')
+    # get a pairtree client to get storage directory
+    pairtree_client = storage.get_store(ark)
+    obj = pairtree.PairtreeStorageObject(ark, pairtree_client)
+
+    # directory where files/folders are
+    data_path = obj.id_to_dirpath() + payload
+    dirs = [] 
+    files = [] 
+
+    # loop over directory and store (separately) files from dirs
+    # storing in a tuple b.c. the javascript requires it (what happened
+    # to decoupling view/controller)
+    for f in os.listdir(data_path):
+        if os.path.isdir(os.path.join(data_path, f)):
+            dirs.append((os.path.join(dir_id, f), (f)))
+        else:
+            files.append((os.path.join(dir_id, f), (f)))
+            
+    return render_to_response('treeview.html', {'files':files, 'dirs': dirs })

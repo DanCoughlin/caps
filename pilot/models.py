@@ -1,3 +1,4 @@
+from __future__ import division
 from django.db import models
 from django.db.models import Sum
 import datetime
@@ -6,6 +7,7 @@ class Philes(models.Model):
     identifier = models.CharField(max_length=32)
     num = models.IntegerField()
     sz = models.FloatField()
+    obj_type = models.CharField(max_length=64)
     #check_sum  = models.CharField(max_length=32)
     #name = models.CharField(max_length=256)
     owner = models.CharField(max_length=32)
@@ -46,8 +48,14 @@ class Philes(models.Model):
 
         num_objects = len(Philes.objects.filter(owner=o)) 
         num_files = Philes.objects.filter(owner=o).aggregate(num=Sum('num'))
-        total_size = Philes.objects.filter(owner=o).aggregate(sz=Sum('sz'))
-        stats = { 'num_objects': num_objects, 'num_files': num_files['num'], 'total_size': total_size['sz'] }
+        ts = Philes.objects.filter(owner=o).aggregate(sz=Sum('sz'))
+        # perhaps we should write a conversion function, but this'll work fer now
+        if num_objects is 0:
+            total_size = "0 MB"
+        else:
+            total_size = str(round(ts['sz'] / 1000000, 2)) + " MB"
+
+        stats = { 'num_objects': num_objects, 'num_files': num_files['num'], 'total_size': total_size}
         return stats
 
 class RDFMask(models.Model):

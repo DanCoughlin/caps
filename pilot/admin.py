@@ -2,7 +2,7 @@ from pilot.models import Philes, RDFMask, Log, Audit
 from django.contrib import admin
 
 class PhilesAdmin(admin.ModelAdmin):
-    list_display = ('identifier', 'num', 'sz', 'path', 'date_updated', 'owner')
+    list_display = ('identifier', 'obj_type', 'num', 'sz', 'path', 'date_updated', 'owner')
     search_fields = ['identifier']
 
 class RDFMaskAdmin(admin.ModelAdmin):

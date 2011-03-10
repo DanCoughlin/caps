@@ -1,8 +1,14 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="description" content="" />
+<meta name="keywords" content="" />
+<meta name="robots" content="index,follow" />
 <title>{% block title %}Penn State University - CAPS{% endblock %}</title>
-<link rel="stylesheet" href="/site_media/css/style.css" type="text/css" />
+
+<link rel="stylesheet" type="text/css" href="/site_media/css/jquery.filetree.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="/site_media/css/psucaps.css" media="screen" />
 
 {% block cssfiles %}{% endblock %}
 
@@ -11,13 +17,42 @@
 {% endblock %}
 </style>
 
+<script type="text/javascript" src="/site_media/js/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="/site_media/js/jquery-ui-1.8.9.custom.min.js"></script>
+<script type="text/javascript" src="/site_media/js/jquery.filetree.js"></script>
+<script type="text/javascript" src="/site_media/js/cufon-1.09i.js"></script>
+<script type="text/javascript" src="/site_media/js/Avenir.font.js"></script>
+<script type="text/javascript" src="/site_media/js/Aeon.font.js"></script>
+<!--[if IE 7]>
+<link rel="stylesheet" type="text/css" href="/site_media/css/ie7.css" media="screen" />
+<![endif]-->
 
-<script src="/site_media/js/jquery.js" type="text/javascript" language="javascript"></script>
-<script src="/site_media/js/modal.js" type="text/javascript" language="javascript"></script>
+<!--[if IE 6]>
+<link rel="stylesheet" type="text/css" href="/site_media/css/ie6.css" media="screen" />
+<![endif]-->
 
 {% block jsfiles %}{% endblock %}
 
 <script type="text/javascript" language="javascript">
+$(document).ready(function(){
+    $('#keywords .text').focus(function() {
+        if($('#keywords .text').val()=='Search'){
+            $('#keywords .text').val('');
+        };
+    });
+    $('#keywords .text').blur(function() {
+        if($('#keywords .text').val()== ''){
+            $('#keywords .text').val('Search');
+        };
+    });
+});
+Cufon.replace('#primary-menu a', {
+    fontFamily: 'Aeon',
+    hover: true
+});
+Cufon.replace('h1', {
+    fontFamily: 'Avenir'
+});
 
 {% block jscode %}{% endblock %}
 
@@ -25,54 +60,42 @@
 
 </head>
 <body>
-<!-- hidenav -->
-<div id="topheader">
-    <h2 class="hidden">Penn State University -  CAPS</h2>
-    <div id="psmark">
-        <a href="http://www.psu.edu/"><img src="/site_media/img/subblue_shield.gif" alt="penn state mark" /></a>
-    </div> <!-- psmark -->
-    <div id="topheaderright">
-        <!-- InstanceBeginEditable name="headertext" -->
-        <h1>CAPS</h1>
-        <!-- InstanceEndEditable -->
-    </div><!--close #topheaderright-->
-</div><!-- close #topheader-->
-
-<div id="bottomheader">
-    <h3 class="hidden">Primary Navigation</h3>
-    <div id="primarynav">
-    <!-- InstanceBeginEditable name="primarynav" -->
-        <ul>
             {% block menu %}
-            <li><a href="/pilot/icons/">Dashboard</a></li>
-            <li><a href="/pilot/object/new/">Ingest Object</a></li>
-            <li><a href="/pilot/batch/new/">Ingest Batch</a></li>
             {% endblock %}
-        </ul>
-    <!-- InstanceEndEditable -->
-    </div><!-- close #primarynav -->
-</div><!--close #bottomheader-->
-
-<div class="stats">
-<span style="font-size: 1.25em;font-weight: bold; color:#333366; padding-right: 10px">My Upload Stats:</span>
-<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Objects</b> {% block total_objects %}{% endblock %}&nbsp;&nbsp;<!-- |&nbsp;&nbsp; -->
-<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Files</b> {% block total_files %}{% endblock %}&nbsp;&nbsp;<!-- |&nbsp;&nbsp; -->
-<span style="font-weight: bold; color: #990000;">&rsaquo;&rsaquo;</span><b>Total Size</b> {% block total_size %}{% endblock %} 
-<form onsubmit="searchMetaData(this); return false;" style="padding: 0; margin: 0; display:inline;">
-<span class="search">
-<input type="text" name="keyword" id="keyword" value="search term" onfocus="this.value='';"/>
-<input type="submit" value="go" />
-</span>
+    <div id="container">
+        <div id="masthead">
+            <a id="mark" href="http://www.psu.edu"><img src="/site_media/img/site_images/psu_mark.png" alt="Penn State" /></a>
+            <img class="sitetitle" src="/site_media/img/site_images/caps.png" alt="CAPS" />
+            <div id="menu-search">
+                <ul id="primary-menu">
+                    <li><a href="/">About the Project</a></li>
+                    <li><a href="/">Support</a></li>
+                    <li><a href="/">FAQ</a></li>
+                </ul>
+<form onsubmit="searchMetaData(this); return false;" style="padding: 0; margin: 0; display:inline;" id="search" name="search">
+                    <input type="text" class="text" name="keywords" value="Search" /> 
+                    <input type="submit" name="searchsubmit" id="searchsubmit" value="Submit Search" />
 </form>
-</div>
+            </div><!-- /menu-search -->
+            <ul id="secondary-menu">
+                {% block nav %} {% endblock %}
+            </ul><!-- /secondary-menu -->
+            <div id="mystats">
+                <span class="statshead">My Upload Stats:</span>
+                <span class="statscontent">&raquo; Objects: <span class="qty">{% block total_objects %}{% endblock %}</span>&nbsp;&nbsp;&nbsp;&nbsp;&raquo; Files: <span class="qty">{% block total_files %}{% endblock %}</span>&nbsp;&nbsp;&nbsp;&nbsp;&raquo; Total Size: <span class="qty">{% block total_size %}{% endblock %}</span>&nbsp;&nbsp;&nbsp;&nbsp;<a href="##">Logout</a></span>
+            </div>
+        </div><!-- /masthead -->
+
 <div id="content">
 {% block content %}{% endblock %}
 </div><!-- close #content -->
-<div id="footer">
-<p>
-Copyright &copy; 2010 The Pennsylvania State University
-</p>
-</div>
+
+    </div><!-- /container -->
+    <div id="footer">
+        <div id="footer-inner">
+            <p>Copyright &copy;2011 The Pennsylvania State University</p>
+        </div><!-- /footer-inner -->
+    </div><!-- /footer -->
+
 </body>
 </html>
-

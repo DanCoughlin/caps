@@ -30,8 +30,8 @@ def exists(id):
 def lookup(id):
     return Philes().get_phile(id) 
        
-def bind(id, full_path, uid, obj_sz, obj_num=1 ):
-    p = Philes(identifier=id, path=full_path, owner=uid, date_updated=datetime.datetime.now(), sz=obj_sz, num=obj_num ) 
+def bind(id, full_path, uid, o_sz, o_num=1, o_type='compound' ):
+    p = Philes(identifier=id, path=full_path, owner=uid, date_updated=datetime.datetime.now(), sz=o_sz, num=o_num, obj_type=o_type ) 
 
     p.save()
     Log().logit(p, "ObjectIdAssigned")

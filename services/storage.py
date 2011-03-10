@@ -36,20 +36,26 @@ def ingest_directory(identifier, source, override_tree_location=None):
     #return s.get()
 
     # make_bag takes a directory for an argument
+    print "go for the bag"
     bag = bagit.make_bag(source)
+    print "made bag"
     pairstore = get_store(identifier, override_tree_location)
+    print "got store"
     pairobj = pairstore.create_object(identifier)
+    print "created obj"
     pairobj.add_directory(bag.path)
-    
+    print "added dir" 
     # nasty workaround since git commit requires terminal login
     # and os.getlogin() causes ioctl error
     #celery workaround - import pwd
     #celery workaround - os.getlogin = lambda: pwd.getpwuid(os.getuid())[0]
    
     repo = init_version(pairobj.location)
+    print "initialized repo"
     (index, untracked) = stage_all(repo)
+    print "staged"
     commit_version(index, "initializing repo with: %s" % untracked)
-
+    print "committed"
     
     # TODO: get this working
     # characterize the object (not working synchronously
