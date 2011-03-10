@@ -13,6 +13,25 @@
 {% block cssfiles %}{% endblock %}
 
 <style type="text/css">
+.ui-autocomplete {
+    max-height: 150px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 20px;
+    background: #eee;
+    width: 15%;
+}
+.ui-autocomplete li {
+    type-display: none;
+    padding: 0 3px 0 0px;
+    margin: 0 0 0 7px;
+}
+.ui-autocomplete li a {
+    color: #244168;
+}
+.ui-autocomplete li a:hover {
+    color: #2761ad;
+}
 {% block cssinline %}
 {% endblock %}
 </style>
@@ -35,14 +54,14 @@
 
 <script type="text/javascript" language="javascript">
 $(document).ready(function(){
-    $('#keywords .text').focus(function() {
-        if($('#keywords .text').val()=='Search'){
-            $('#keywords .text').val('');
+    $('#keyword.text').focus(function() {
+        if($('#keyword.text').val()=='Search'){
+            $('#keyword.text').val('');
         };
     });
-    $('#keywords .text').blur(function() {
-        if($('#keywords .text').val()== ''){
-            $('#keywords .text').val('Search');
+    $('#keyword.text').blur(function() {
+        if($('#keyword.text').val()== ''){
+            $('#keyword.text').val('Search');
         };
     });
 });
@@ -54,6 +73,89 @@ Cufon.replace('h1', {
     fontFamily: 'Avenir'
 });
 
+$(function() {
+    // assign the autocomplete ui to the keyword 
+    // input for searching metadata
+    $("#keyword").autocomplete({
+        source: "/pilot/autocomplete/",
+        minLength: 2,
+        focus: function(event, ui) {
+            $('#keyword').val(ui.item.label);
+            return false;
+        },
+        select: function(event, ui) {
+            $('#keyword').val(ui.item.label);
+            return false;
+        }
+    })
+    .data("autocomplete")._renderItem = function(ul, item) {
+        return $("<li></li>")
+            .data("item.autocomplete", item)
+            .append("<a>" + item.label + "</a>")
+            .appendTo(ul); 
+    };
+});
+
+/*
+ * function goes and gets the matching
+ * meta data for matching keywords
+ */
+function searchMetaData(f) {
+    var search_url = "/pilot/search/" + f.keyword.value
+    $.ajax({
+        type: "GET",
+        url: search_url,
+        dataType: "html",
+        success: displayObjects
+    });
+}
+
+
+/*
+ * this function displays the objects
+ * that have been found via searching 
+ * the metadata
+ */
+function displayObjects(data) {
+    var json = $.parseJSON(data);
+
+    // no search results
+    if( json.search.matches.length == 0 ) {
+        //$('#objectListing').html("No search results for: " + json.search.keyword);
+        $('#content').html("<h1>Search Results</h1>");
+        $('#content').append("No search results for: " + json.search.keyword);
+    }
+    // search results existing
+    else {
+        $('#content').html("<h1>Search Results</h1>");
+        //$('#objectListing').html("Search results for: " + json.search.keyword +"<br />");
+        $('#content').append("Search results for: " + json.search.keyword +"<br />");
+        var o = json.search.matches;
+        var str = "";
+        var re = new RegExp("(" + json.search.keyword + ")");
+        str += "<table id=\"list-view\"><tr><th>&nbsp;</th><th>Name</th><th>ID</th><th>Metadata</th><th>Last Updated</th><th>Actions</th></tr>";
+        // loop over unique objects that matched search
+        for (var i=0; i < o.length; i++) {
+            
+            str += "<tr><td><img src=\"/site_media/img/site_images/" + o[i].img + "_48.png\" alt=\"" + o[i].alt + "\" /></td>";
+            str += "<td><a href=\"/pilot/"+ o[i].ark + "\">"+ o[i].title +"</a></td><td>" + o[i].ark + "</td><td>";
+            // loop over metadata for matched object
+            for (var j=0; j < o[i].metadata.length; j++) {
+                str += o[i].metadata[j].triple_predicate + "=>";
+                if( re.test(o[i].metadata[j].triple_object) ) {
+                    str += o[i].metadata[j].triple_object.replace(re, "<span style=\"color:red\">$1</span>");
+                }
+                str += "<br />";
+            }
+            str += "</td><td>"+ o[i].version_date+"</td>";
+            str += "<td class=\"fileactions\"><a href=\"/\"><img src=\"/site_media/img/site_images/icon_download.png\" alt=\"download\" /></a><a href=\"/\"><img src=\"/site_media/img/site_images/icon_edit.png\" alt=\"edit\" /></a><a href=\"/\"><img src=\"/site_media/img/site_images/icon_delete.png\" alt=\"delete\" /></a></td></tr>";
+        }
+        str += "</table>";
+        //$('#objectListing').append(str);
+        //$('#objectListing').html(str);
+        $('#content').append(str);
+    } // close - else there are search results
+}
 {% block jscode %}{% endblock %}
 
 </script>
@@ -73,7 +175,7 @@ Cufon.replace('h1', {
                     <li><a href="/">FAQ</a></li>
                 </ul>
 <form onsubmit="searchMetaData(this); return false;" style="padding: 0; margin: 0; display:inline;" id="search" name="search">
-                    <input type="text" class="text" name="keywords" value="Search" /> 
+                    <input type="text" class="text" name="keyword" id="keyword" value="Search" /> 
                     <input type="submit" name="searchsubmit" id="searchsubmit" value="Submit Search" />
 </form>
             </div><!-- /menu-search -->
@@ -88,6 +190,7 @@ Cufon.replace('h1', {
 
 <div id="content">
 {% block content %}{% endblock %}
+
 </div><!-- close #content -->
 
     </div><!-- /container -->

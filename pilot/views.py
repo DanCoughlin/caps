@@ -35,20 +35,18 @@ def default(request, display='icons'):
     phils = Philes.objects.filter(owner='dmc186')
     stats = Philes().get_stats()
     myobj = []
-    icons ={
-        "compound" : ('icon_folder_48.png', 'folder'),
-        "Image" : ('icon_psd_48.png', 'image file')
-    }
+#movie: <img src="/site_images/icon_movie_48.png" alt="movie file" />
+#zip: <img src="/site_images/icon_zip_48.png" alt="zip file" />
     for p in phils:
         print "id:%s" % p.identifier
         metadata = RDFMask.objects.filter(phile=p)
         version = len(storage.list_versions(p.identifier))
         title = RDFMask().get_title(p) 
-        obj_type = p.obj_type 
-        myobj.append(DigitalObject(title, p.identifier, obj_type, version, p.date_updated, "icon_folder_48.png", "folder")) 
-        #if obj_type is 'compound':
-        #else: 
-        #    myobj.append(DigitalObject(title, p.identifier, obj_type, version, p.date_updated, icons[obj_type][0], icons[obj_type][1]))
+        # if we don't have the object type then default to compound
+        if settings.ICONS.has_key(p.obj_type):
+            myobj.append(DigitalObject(title, p.identifier, p.obj_type, version, p.date_updated, settings.ICONS[p.obj_type][0], settings.ICONS[p.obj_type][1])) 
+        else:
+            myobj.append(DigitalObject(title, p.identifier, p.obj_type, version, p.date_updated, settings.ICONS["default"][0], settings.ICONS["default"][1])) 
 
     if display == 'icons':
         return render_to_response('icons.html', {'objects': myobj, 'stats': stats})
@@ -384,6 +382,13 @@ def upload_object(request):
 
     return render_to_response('ingest.html', {'batch': False, 'stats': stats})
 
+"""
+get the listing of versions for an object
+"""
+@login_required
+def get_versions(request, arkid):
+    versions = storage.list_versions(arkid)
+    return render_to_response('versions.html', {'versions': versions, 'ark': arkid})
 
 """
 remove a metadata element
@@ -401,7 +406,11 @@ adds metadata to an existing object
 def add_metadata(request):
     ark = request.POST.get('ark') 
     add_assertions(request, ark)
-    return render_to_response('search.html')
+
+    p = Philes().get_phile(ark) 
+    md = RDFMask().get_md(p) 
+    versions = storage.list_versions(ark)
+    return render_to_response('meta_new.html', {'phile': p, 'metadata': md, 'versions': versions, 'meta': sorted(settings.METADATA_URLS.keys()) })
 
 
 """
@@ -476,9 +485,13 @@ def management(request, arkid):
     title = RDFMask().get_title(p)
     versions = storage.list_versions(arkid)
     path = p.path + "/data"
+    img = "icon_folder"
+    if settings.ICONS.has_key(p.obj_type):
+        img = settings.ICONS[p.obj_type][0]
+
     for pth, drs, files in os.walk(path):
         pass
-    return render_to_response('management.html', {'arkid': arkid, 'phile' : p, 'md' : md, 'files' : files, 'meta' : sorted(settings.METADATA_URLS.keys()), 'versions': versions, 'stats': stats, 'obj_name' : title, 'last_audit': last_audit})
+    return render_to_response('management.html', {'phile' : p, 'md' : md, 'files' : files, 'meta' : sorted(settings.METADATA_URLS.keys()), 'versions': versions, 'stats': stats, 'obj_name' : title, 'last_audit': last_audit, 'img': img})
 
 
 """
@@ -517,7 +530,10 @@ def search(request, keyword):
                 myobj.append(o)
             title = RDFMask().get_title(r.phile)
             version = len(storage.list_versions(r.phile.identifier))
-            o = DigitalObject(title, r.phile.identifier, "", version, r.phile.date_updated, "", [])
+            if settings.ICONS.has_key(r.phile.obj_type):
+                o = DigitalObject(title, r.phile.identifier, r.phile.obj_type, version, r.phile.date_updated, settings.ICONS[r.phile.obj_type][0], settings.ICONS[r.phile.obj_type][1], [])
+            else:
+                o = DigitalObject(title, r.phile.identifier, r.phile.obj_type, version, r.phile.date_updated, settings.ICONS["default"][0], settings.ICONS["default"][1], [])
 
         o.metadata.append( (r.triple_predicate, r.triple_object) ) 
         id_tracker = r.phile.identifier
@@ -539,6 +555,9 @@ def autocomplete(request):
 
 
 """
+function looks up the tree of files located
+within a bag data/ directory.  this function
+only returns one level of the tree at a time
 """
 @login_required
 def filetree(request):
@@ -569,6 +588,10 @@ def filetree(request):
         if os.path.isdir(os.path.join(data_path, f)):
             dirs.append((os.path.join(dir_id, f), (f)))
         else:
-            files.append((os.path.join(dir_id, f), (f)))
+            fullfile = os.path.join(dir_id, f)
+            basename, ext = os.path.splitext(fullfile)
+            ext = string.replace(ext, '.', '')
+            #files.append((os.path.join(dir_id, f), (f), ext))
+            files.append((fullfile, f, ext))
             
     return render_to_response('treeview.html', {'files':files, 'dirs': dirs })

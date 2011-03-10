@@ -6,7 +6,7 @@ from pilot.models import Philes, Log
 #from tasks import identify as identify_task
 
 def mint():
-    ark = arkpy.mint(authority='42409', template='eeddeeddk')
+    ark = arkpy.mint(authority='42409', template='eeddeeddk', bare=False)
     return ark
     #ark = identify_task.mint.delay(authority='42409', template='eeddeeddk')
     #return ark.get()

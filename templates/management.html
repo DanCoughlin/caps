@@ -32,7 +32,7 @@ $(document).ready(function() {
     $("#obj-tabs").tabs();
 
     $('#filetree').fileTree({
-        root: '{{arkid}}/data',
+        root: '{{phile.identifier}}/data',
         script: '/pilot/filetree/',
         expandSpeed: 500,
         multiFolder: false
@@ -62,6 +62,38 @@ function removeMetaDisplay(data) {
     var json = $.parseJSON(data);
     var id = json.meta.id 
     $('#mdv_'+id).remove();
+    getVersions();
+}
+
+
+/*
+ * function goes and gets the latest versions
+ * for this object 
+ */
+function getVersions() {
+    var v_url = "/pilot/versions/{{phile.identifier}}";
+    $.ajax({
+        url: v_url,
+        type: "GET",
+        dataType: "html",
+        success: updateVersionDisplay
+    });
+}
+
+
+/*
+ * function updates the dropdown display
+ */
+function updateVersionDisplay(data) {
+    var json = $.parseJSON(data);
+    var versioning = $('#versioning');
+    $('option', versioning).remove();
+    for(var i=0; i < json.versions.length; i++) {
+        sel = (i == (json.versions.length-1) ? 'selected="selected"' : '');
+        opt = '<option value="'+(i+1)+'" ' + sel + '>'+ (i+1) + ' - ' + json.versions[i].version_date + '</option>';
+        versioning.append(opt)
+        
+    }
 }
 
 
@@ -96,7 +128,9 @@ function removeMetaDisplay(data) {
   * update display to reflect new metadata
   */
 function displayNewMeta(data) {
-    var json = $.parseJSON(data);
+    //var json = $.parseJSON(data);
+    $('#md_display').html( data );
+    getVersions();
 }
 
 
@@ -147,6 +181,7 @@ function changeMetaDataDisplay(data) {
     toggleMeta(id);
     $('#mdv_'+id).effect("highlight", {color: '#ff9900'}, 4000);
     $('#status_'+id).fadeOut(5000);
+    getVersions();
 }
 
 /*
@@ -230,24 +265,24 @@ function hideObjLog() {
 <div id="object">
     <div class="item">
         <h2>{{obj_name}}</h2>
-        <img class="icon preview" src="/site_media/img/site_images/icon_folder_128.png" alt="folder" />
+        <img class="icon preview" src="/site_media/img/site_images/{{img}}_128.png" alt="folder" />
         <div id="obj-tabs"> 
                 <ul class="nav">
                     <li><a href="#obj-details">Object Details</a></li>
                     <li><a href="#obj-files">Files</a></li>
-                    <li><a href="#obj-log" onclick="getObjLog('{{arkid}}'); return false;">Log</a></li>
+                    <li><a href="#obj-log" onclick="getObjLog('{{phile.identifier}}'); return false;">Log</a></li>
                 </ul>
                 <div id="obj-details">
                     <table>
                         <tr>
                             <td class="left">
                                 <h3>Object Details:</h3>
-                                <a class="audit filelink" href="/" onclick="auditObject('{{arkid}}'); return false;">Audit</a>
+                                <a class="audit filelink" href="/" onclick="auditObject('{{phile.identifier}}'); return false;">Audit</a>
                             </td>
                             <td>
-                                <strong>ID:</strong> {{arkid}}<br /> 
-                                <strong>Date Ingested:</strong> <br /> 
-                                <strong>Type:</strong> <br /> 
+                                <strong>ID:</strong> {{phile.identifier}}<br /> 
+                                <strong>Date Updated:</strong> {{phile.date_updated}}<br /> 
+                                <strong>Type:</strong> {{phile.obj_type}}</strong> <br /> 
                                 <strong>Last Audit:</strong> 
 {% if last_audit %}
 <span id="audit_date">{{ last_audit.date_updated }}</span>
@@ -278,30 +313,13 @@ function hideObjLog() {
 </select>
                             </td>
                         </tr>
-<!--
-                        <tr>
-                            <td class="left">
-                                <h3>Included Files:</h3>
-{% comment %}
-{% for f in files %}
-<div class="obj_file" id="{{f|escape}}"><span class="detail">&rsaquo;&rsaquo;</span>{{f}} 
-<a href="">Remove</a> | <a href="">Rename</a></div>
-{% endfor %}
-{% endcomment %}
-                                <a class="add filelink" href="/">Add File</a>
-                                <a class="remove filelink" href="/">Remove File</a>
-                                <a class="replace filelink" href="/">Replace File</a>
-                            </td>
-                            <td>
-                            </td>
-                        </tr>
--->
                         <tr>
                             <td class="left">
                                 <h3>Metadata:</h3>
-                                <a class="meta filelink" href="/">Show All Metadata</a>
+                                <a class="meta filelink" href="/" onclick="addMetaInput(); return false;">Add Metadata</a>
                             </td>
-                            <td>
+                            <td id="md_display">
+                            <!-- METADATA DISPLAY -->
 {% for m in md %}
 <span id="mdv_{{m.id}}" class="metadata">
 <a href="/" onclick="toggleMeta('{{m.id}}'); return false;"><img src="/site_media/img/site_images/icon_edit.png" alt="edit" /></a>
@@ -329,10 +347,29 @@ function hideObjLog() {
 <input type="text" name="meta_value" id="meta_value" size="20" maxlength="" value="{{m.triple_object}}"/> 
 <input type="submit" value="update" />
 <input type="button" value="cancel" onclick="toggleMeta('{{m.id}}');"/>
-</form>
+</form> 
 </div>
+<!-- end edit form -->
 
 {% endfor %}
+                            <!-- ADD METADATA -->
+<p>
+<form onsubmit="submitMetaData(this); return false;">
+<input type="hidden" name="ark" id="ark" value="{{phile.identifier}}" />
+<input type="hidden" name="metadata_count" id="metadata_count" value="1" />
+<div id="md_1">
+<label class="reg">Metadata:</label> 
+<select name="meta_type_1" id="meta_type_1" size="1">
+    <option value="">Select Metadata Type</option>
+{% for m in meta %} 
+    <option value="{{m}}">{{m}}</option>
+{% endfor %}
+</select>
+<input type="text" name="meta_value_1" id="meta_value_1" size="20" maxlength="" />
+</div>
+<input type="submit" value="Add Metadata" />
+</form>
+</p>
                             </td>
                         </tr>
                     </table>
@@ -346,52 +383,4 @@ function hideObjLog() {
             </div><!-- /obj-tabs -->
         </div><!-- /item -->
     </div><!-- /object -->
-
- 
-    
-<!-- 
-<div><span class="detail">&rsaquo;&rsaquo;</span>Event Log: 
-<a href="" onclick="getObjLog('{{arkid}}'); return false;" id="view_log_link">View</a>
-<a href="" onclick="hideObjLog(); return false;" id="hide_log_link">Hide</a>
-<div id="log"></div>
-</p>
--->
-
-<!-- ADD MORE METADATA -->
-<!--
-<h4>Add Metadata:</h4>
-<p>
-<form onsubmit="submitMetaData(this); return false;">
-<input type="hidden" name="ark" id="ark" value="{{arkid}}" />
-<input type="hidden" name="metadata_count" id="metadata_count" value="1" />
-<div id="md_1">
-<label class="reg">Metadata:</label> 
-<select name="meta_type_1" id="meta_type_1" size="1">
-    <option value="">Select Metadata Type</option>
-{% for m in meta %} 
-    <option value="{{m}}">{{m}}</option>
-{% endfor %}
-</select>
-<input type="text" name="meta_value_1" id="meta_value_1" size="20" maxlength="" />
-</div>
-<div id="addmeta">
-<a href="#" onclick="addMetaInput(); return false;">+Add Metadata</a>
-</div>
-<input type="submit" value="Add Metadata" />
-</form>
-</p>
-
-
-<h4>Actions:</h4>
-<p>
-<span class="detail">&rsaquo;&rsaquo;</span><a href="">Add File</a><br />
-<span class="detail">&rsaquo;&rsaquo;</span><a href="">Remove File</a><br />
-<span class="detail">&rsaquo;&rsaquo;</span><a href="">Replace File</a><br />
-<span class="detail">&rsaquo;&rsaquo;</span><a href="">Manage Metadata</a><br />
-</p>
-
-<p>
-</p>
-</div>
--->
 {% endblock %}

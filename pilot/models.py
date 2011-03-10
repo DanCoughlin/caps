@@ -108,7 +108,7 @@ class RDFMask(models.Model):
 
 
     def get_md(self, p):
-        md = RDFMask.objects.filter(phile=p)
+        md = RDFMask.objects.filter(phile=p).order_by('triple_predicate')
         return md
 
     """
@@ -138,7 +138,7 @@ class RDFMask(models.Model):
     get metadata values that start with the prefix value passed
     """
     def get_autocomplete(self, prefix):
-        matches = RDFMask.objects.filter(triple_object__istartswith=prefix)
+        matches = RDFMask.objects.filter(triple_object__istartswith=prefix).values("triple_object").distinct()
         return matches
 
 

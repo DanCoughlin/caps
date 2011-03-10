@@ -114,6 +114,20 @@ METADATA_URLS = dict(
     publisher="http://purl.org/dc/elements/1.1/publisher"
 )
 
+ICONS = { 
+        "default" : ('icon_folder', 'object'),
+        "compound" : ('icon_folder', 'folder'),
+        "image/jpeg" : ('icon_jpeg', 'image file'),
+        "image/jpg" : ('icon_jpg', 'image file'),
+        "image/png" : ('icon_png', 'image file'),
+        "image/gif" : ('icon_gif', 'image file'),
+        "image/psd" : ('icon_psd', 'image file'),
+        "application/msword" : ('icon_doc', 'MS Word Doc'),
+        "video/mp4" : ('icon_mp4', 'Movie mpeg4'),
+        "application/x-download" : ('icon_pdf', 'Download File'),
+        "audio/mpeg" : ('icon_mp3', 'audio file')
+}
+
 try:
     from local_settings import *
 except ImportError:

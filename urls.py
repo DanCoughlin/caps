@@ -29,6 +29,9 @@ urlpatterns = patterns('',
     # view object event log
     (r'^pilot/log/(?P<arkid>ark:(.)*)$', 'caps.pilot.views.get_log'),
 
+    # view versions for object 
+    (r'^pilot/versions/(?P<arkid>ark:(.)*)$', 'caps.pilot.views.get_versions'),
+
     # search for objects
     (r'^pilot/search/(?P<keyword>(.)*)$', 'caps.pilot.views.search'),
 
