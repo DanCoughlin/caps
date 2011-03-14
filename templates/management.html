@@ -322,9 +322,9 @@ function hideObjLog() {
                             <!-- METADATA DISPLAY -->
 {% for m in md %}
 <span id="mdv_{{m.id}}" class="metadata">
-<a href="/" onclick="toggleMeta('{{m.id}}'); return false;"><img src="/site_media/img/site_images/icon_edit.png" alt="edit" /></a>
-<a href="/" onclick="return false;"><img src="/site_media/img/site_images/icon_duplicate.png" alt="duplicate" /></a>
-<a href="/" onclick="removeMeta('{{m.id}}'); return false;"><img src="/site_media/img/site_images/icon_delete.png" alt="delete" /></a>&nbsp;&nbsp;
+<a href="/" onclick="toggleMeta('{{m.id}}'); return false;"><img src="/site_media/img/site_images/icon_edit.png" alt="edit" title="edit"/></a>
+<a href="/" onclick="return false;"><img src="/site_media/img/site_images/icon_duplicate.png" alt="duplicate" title="copy"/></a>
+<a href="/" onclick="removeMeta('{{m.id}}'); return false;"><img src="/site_media/img/site_images/icon_delete.png" alt="delete" title="delete" /></a>&nbsp;&nbsp;
 <strong><span id="key_{{m.id}}">{{m.triple_predicate}}</span>:</strong> 
 <span id="val_{{m.id}}">{{m.triple_object}}</span>
 <span id="status_{{m.id}}"></span>

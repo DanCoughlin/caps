@@ -137,7 +137,7 @@ function displayObjects(data) {
         // loop over unique objects that matched search
         for (var i=0; i < o.length; i++) {
             
-            str += "<tr><td><img src=\"/site_media/img/site_images/" + o[i].img + "_48.png\" alt=\"" + o[i].alt + "\" /></td>";
+            str += "<tr><td><img src=\"/site_media/img/site_images/" + o[i].img + "_48.png\" alt=\"" + o[i].alt + "\" title=\"" + o[i].alt + "\"/></td>";
             str += "<td><a href=\"/pilot/"+ o[i].ark + "\">"+ o[i].title +"</a></td><td>" + o[i].ark + "</td><td>";
             // loop over metadata for matched object
             for (var j=0; j < o[i].metadata.length; j++) {
@@ -148,7 +148,7 @@ function displayObjects(data) {
                 str += "<br />";
             }
             str += "</td><td>"+ o[i].version_date+"</td>";
-            str += "<td class=\"fileactions\"><a href=\"/\"><img src=\"/site_media/img/site_images/icon_download.png\" alt=\"download\" /></a><a href=\"/\"><img src=\"/site_media/img/site_images/icon_edit.png\" alt=\"edit\" /></a><a href=\"/\"><img src=\"/site_media/img/site_images/icon_delete.png\" alt=\"delete\" /></a></td></tr>";
+            str += "<td class=\"fileactions\"><a href=\"/\"><img src=\"/site_media/img/site_images/icon_download.png\" alt=\"download\" title=\"download\"/></a><a href=\"/\"><img src=\"/site_media/img/site_images/icon_edit.png\" alt=\"edit\" title=\"edit\" /></a><a href=\"/\"><img src=\"/site_media/img/site_images/icon_delete.png\" alt=\"delete\" title=\"delete\"/></a></td></tr>";
         }
         str += "</table>";
         //$('#objectListing').append(str);
