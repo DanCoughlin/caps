@@ -167,8 +167,30 @@ def get_meta_dict(spreadsheet):
 determines if the file being uploaded is an archived file to unpack
 """
 def is_archive(uploadfile):
-    archive_types = ['application/x-gzip', 'application/x-tar', 'application/zip', 
-        'application/x-bzip2']
+    print "archive type: %s" % uploadfile.content_type
+    if is_zip(uploadfile) or is_tar(uploadfile) or is_bzip(uploadfile) or is_gzip(uploadfile):
+        return True
+    else:
+        return False
+    
+
+"""
+series of functions for checking archive type
+"""
+def is_zip(uploadfile):
+    archive_types = ['application/zip', 'application/x-zip-compressed']
+    return uploadfile.content_type in archive_types
+
+def is_tar(uploadfile):
+    archive_types = ['application/x-tar']
+    return uploadfile.content_type in archive_types
+
+def is_bzip(uploadfile):
+    archive_types = ['application/x-bzip2']
+    return uploadfile.content_type in archive_types
+
+def is_gzip(uploadfile):
+    archive_types = ['application/x-gzip']
     return uploadfile.content_type in archive_types
 
 
@@ -177,6 +199,7 @@ determines if the file being uploaded is an spreadsheet
 """
 def is_spreadsheet(uploadfile):
     spreadsheet_types = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']
+    print "spreadsheet type: %s" % uploadfile.content_type
     return uploadfile.content_type in spreadsheet_types     
 
 
@@ -200,28 +223,24 @@ atype is the type of file from the content_type
     passed via form
 """
 def unpack_archive(afile_name, fil):
-    atype = fil.content_type
 
     tmp_path = os.path.dirname(afile_name)
 
-    suffix = atype.split("/")    
-    if len(suffix) != 2:
-        return False
-    
-    if suffix[1] == 'zip':  
+    if is_zip(fil):
         af = zipfile.ZipFile(afile_name, "r")
-    elif suffix[1] == 'x-tar':
+    elif is_tar(fil):
         af = tarfile.open(afile_name, "r")
-    elif suffix[1] == 'x-gzip':
+    elif is_gzip(fil):
         af = tarfile.open(afile_name, "r:gz")
-    elif suffix[1] == 'x-bzip2':
+    elif is_bzip(fil):
         af = tarfile.open(afile_name, "r:bz2")
     else:
         print "no match for archive: %s" % suffix[1]
         return False
 
     # Sanitize - ensure no absolute paths or '../' 
-    if suffix[1] == 'zip':
+    #if suffix[1] == 'zip' or suffix[1] == 'x-zip-compressed':  
+    if is_zip(fil): 
         for name in af.namelist():
             if os.path.isabs(name) or re.match('^\.\.', name):
                 print "file no good: %s" % name
@@ -264,8 +283,12 @@ def upload_batch(request):
         stats = Philes().get_stats()
 
         # enforce the upload files order/type
-        if not is_spreadsheet(spreadsheet) or not is_archive(archive):
-            print "one of your files just ain't right"
+        if not is_spreadsheet(spreadsheet):
+            print "spreadsheet file just ain't right"
+            return render_to_response('ingest_batch.html', {'batch': True, 'stats':stats})
+        
+        if not is_archive(archive):
+            print "archive file just ain't right"
             return render_to_response('ingest_batch.html', {'batch': True, 'stats':stats})
 
         # both uploads are valid: process batch upload
@@ -321,6 +344,8 @@ def upload_batch(request):
                 print "Unexpected error:", sys.exc_info()[0]
                 print "%s" % newf 
                 raise
+        # we can now remove whole temp dir now(incl. spreadsheet) 
+        shutil.rmtree(uploaddir)
     return HttpResponseRedirect('/pilot/list')
 
 
@@ -376,6 +401,9 @@ def upload_object(request):
         # bind hasn't happened yet - yucky.
         Log().logark(ark, 'ObjectIngested')
         add_assertions(request, ark)
+
+        # remove temp files from webserver
+        shutil.rmtree(uploaddir)
 
         # done adding metadata 
         return HttpResponseRedirect('/pilot/list')
