@@ -11,8 +11,6 @@ urlpatterns = patterns('',
     # display dashboard
     (r'^pilot/(?P<display>(list|icons))', 'caps.pilot.views.default'),
 
-    # view object
-    (r'^pilot/(?P<arkid>ark:(.)*)$', 'caps.pilot.views.management'),
 
     # update metadata attribute
     (r'^pilot/meta/update$', 'caps.pilot.views.meta_update'), 
@@ -28,6 +26,7 @@ urlpatterns = patterns('',
 
     # view object event log
     (r'^pilot/log/(?P<arkid>ark:(.)*)$', 'caps.pilot.views.get_log'),
+    #(r'^pilot/(?P<arkid>ark:/\d{5}/(.)*)\/log$', 'caps.pilot.views.get_log'),
 
     # view versions for object 
     (r'^pilot/versions/(?P<arkid>ark:(.)*)$', 'caps.pilot.views.get_versions'),
@@ -49,6 +48,9 @@ urlpatterns = patterns('',
 
     # get the files within an object
     (r'^pilot/filetree', 'caps.pilot.views.filetree'),
+
+    # view object - order of this matters
+    (r'^pilot/(?P<arkid>ark:/\d{5}/(.)*)$', 'caps.pilot.views.management'),
 
     # go to default view if you hit /pilot/ or /
     (r'^pilot', 'caps.pilot.views.default'),

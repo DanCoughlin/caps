@@ -125,7 +125,9 @@ ICONS = {
         "application/msword" : ('icon_doc', 'MS Word Doc'),
         "video/mp4" : ('icon_mp4', 'Movie mpeg4'),
         "application/x-download" : ('icon_pdf', 'Download File'),
-        "audio/mpeg" : ('icon_mp3', 'audio file')
+        "application/pdf" : ('icon_pdf', 'PDF File'),
+        "audio/mpeg" : ('icon_mp3', 'audio file'),
+        "audio/mp3" : ('icon_mp3', 'audio file')
 }
 
 try:

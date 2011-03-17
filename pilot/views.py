@@ -38,7 +38,7 @@ def default(request, display='icons'):
 #movie: <img src="/site_images/icon_movie_48.png" alt="movie file" />
 #zip: <img src="/site_images/icon_zip_48.png" alt="zip file" />
     for p in phils:
-        print "id:%s" % p.identifier
+        
         metadata = RDFMask.objects.filter(phile=p)
         version = len(storage.list_versions(p.identifier))
         title = RDFMask().get_title(p) 
@@ -235,7 +235,7 @@ def unpack_archive(afile_name, fil):
     elif is_bzip(fil):
         af = tarfile.open(afile_name, "r:bz2")
     else:
-        print "no match for archive: %s" % suffix[1]
+        print "no match for archive: %s" % afile_name 
         return False
 
     # Sanitize - ensure no absolute paths or '../' 
@@ -536,6 +536,7 @@ get log for an object
 """
 @login_required
 def get_log(request, arkid):
+    print "identifier is %s" % arkid
     l = Log().get_log(arkid)
     return render_to_response('log.html', {'logs':l})
 
