@@ -85,7 +85,7 @@ def stage_all(repo):
     # (otherwise they are no longer 'untracked' after added to index)
     untracked = repo.untracked_files
     index.add(repo.untracked_files)
-    index.add([diff.a_blob.name for diff in index.diff(None)])
+    index.add([diff.a_blob.path for diff in index.diff(None)])
     return (index, untracked)
 
 def checkout_file(repo, f, commit_id):
